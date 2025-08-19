@@ -63,16 +63,17 @@ a-scene {
 
   <a-entity mindar-image-target="targetIndex: 0">
 
-    <!-- Напівпрозора куля -->
-    <a-sphere id="magicSphere" position="0 0.5 0" radius="0.3" color="#0A1F44" opacity="0" segments-width="32" segments-height="32"
-              metalness="0.2" roughness="0.3">
+    <!-- Напівпрозора магічна куля -->
+    <a-sphere id="magicSphere" position="0 0.5 0" radius="0.05" color="#0A1F44" opacity="0" segments-width="32" segments-height="32"
+              metalness="0.2" roughness="0.3" emissive="#FFD700" emissiveIntensity="0.8">
       <!-- Анімація появи та обертання -->
+      <a-animation attribute="scale" from="0 0 0" to="1 1 1" dur="1000" begin="showSphere"></a-animation>
       <a-animation attribute="opacity" from="0" to="0.5" dur="1000" begin="showSphere"></a-animation>
       <a-animation attribute="rotation" to="0 360 0" dur="8000" repeat="indefinite" easing="linear"></a-animation>
     </a-sphere>
 
     <!-- Текст всередині кулі -->
-    <a-text id="arText" value="" color="#FFD700" align="center" position="0 0.5 0.31" width="1.2" opacity="0">
+    <a-text id="arText" value="" color="#FFD700" align="center" position="0 0.5 0.11" width="0.8" opacity="0">
       <a-animation attribute="opacity" from="0" to="1" dur="1000" begin="showText"></a-animation>
     </a-text>
 
@@ -113,16 +114,18 @@ const sphere = document.getElementById('magicSphere');
 const sound = document.getElementById('magicSound');
 
 button.addEventListener('click', () => {
+  // Програємо звук
   sound.currentTime = 0;
   sound.play();
+
   const name = inputName.value || "Друг";
   const wish = wishes[Math.floor(Math.random() * wishes.length)];
-  const message = `Привіт, ${name} з ${className} класу!\nМагічна куля ${schoolName} має для тебе побажання ✨\n${wish}`;
+  const message = `Привіт, ${name}!\nМагічна куля ${schoolName} має для тебе побажання ✨\n${wish}`;
   
   // Встановлюємо текст
   arText.setAttribute('value', message);
-  
-  // Запускаємо анімації появи
+
+  // Запускаємо анімації появи кулі та тексту
   sphere.emit('showSphere');
   arText.emit('showText');
 });
