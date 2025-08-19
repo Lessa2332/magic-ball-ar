@@ -12,17 +12,18 @@
 
   <style>
     :root {
-      --primary-color: #FFD700;
-      --secondary-color: #FF69B4;
+      --primary-color: #FFD700; /* Жовтий для яскравості */
+      --secondary-color: #FF69B4; /* Рожевий для веселощів */
+      --background-gradient: linear-gradient(to bottom, #A3BFFA, #FEF9A7); /* Пастельний блакитно-жовтий градієнт для дітей */
     }
     body, html {
       margin: 0;
       padding: 0;
       overflow: hidden;
-      font-family: 'Comic Sans MS', 'Segoe UI', sans-serif;
+      font-family: 'Comic Sans MS', sans-serif;
       height: 100%;
       width: 100%;
-      background: transparent;
+      background: var(--background-gradient);
     }
     a-scene {
       position: fixed;
@@ -39,42 +40,51 @@
       transform: translateX(-50%);
       z-index: 100;
       text-align: center;
-      background: rgba(255, 255, 255, 0.3);
-      padding: 12px 16px;
-      border-radius: 15px;
-      box-shadow: 0 0 10px var(--primary-color);
+      background: rgba(255, 255, 255, 0.5);
+      padding: 15px;
+      border-radius: 20px;
+      box-shadow: 0 0 15px var(--primary-color);
+      animation: bounce 2s infinite; /* Анімація стрибків для веселості */
     }
     #nameInput {
-      padding: 10px;
-      font-size: 18px;
-      border-radius: 10px;
-      border: 2px solid var(--secondary-color);
-    }
-    #predictButton {
-      padding: 8px 12px;
-      font-size: 16px;
-      background: #0A1F44;
-      color: var(--primary-color);
-      border-radius: 8px;
-      margin-left: 5px;
-    }
-    #resultText {
-      margin-top: 8px;
+      padding: 12px;
       font-size: 20px;
-      color: #0A1F44;
-      text-shadow: 0 0 5px var(--primary-color);
-      white-space: pre-line;
+      border-radius: 15px;
+      border: 3px solid var(--secondary-color);
+      background: rgba(255, 255, 255, 0.8);
+      width: 80%;
+      margin-bottom: 10px;
     }
-    #instruction {
-      font-size: 16px;
+    #greeting {
+      font-size: 24px;
       color: #0A1F44;
-      margin-top: 5px;
+      text-shadow: 0 0 10px var(--primary-color);
+      margin-bottom: 10px;
+      animation: glow 1.5s infinite alternate; /* Анімація сяйва для привітання */
     }
-    #signature {
-      font-size: 14px;
-      color: #0A1F44;
-      opacity: 0.8;
-      margin-top: 5px;
+    #wishButton {
+      padding: 12px 20px;
+      font-size: 22px;
+      background: var(--secondary-color);
+      color: #FFFFFF;
+      border-radius: 15px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--primary-color);
+      margin-bottom: 10px;
+      animation: pulse 1.5s infinite; /* Анімація пульсації для кнопки */
+    }
+    #youtubeButton {
+      padding: 10px 15px;
+      font-size: 20px;
+      background: #FF0000; /* Червоний для YouTube */
+      color: #FFFFFF;
+      border-radius: 15px;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+      display: none; /* Початково прихований, з'являється після побажання */
+      animation: spin 2s infinite linear; /* Анімація обертання для кнопки YouTube */
     }
     #errorMessage {
       display: none;
@@ -82,21 +92,38 @@
       font-size: 16px;
       margin-top: 10px;
     }
+    /* Анімації для дітей */
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    @keyframes glow {
+      0% { text-shadow: 0 0 5px var(--primary-color); }
+      100% { text-shadow: 0 0 15px var(--secondary-color); }
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 
 <body>
   <div id="uiContainer">
-    <input id="nameInput" placeholder="Введи своє ім'я, школярику! 🎉">
-    <button id="predictButton">Магія ✨</button>
-    <div id="instruction">Торкнися зірочки! 🌟</div>
-    <div id="resultText"></div>
-    <div id="signature">@SmartLessa - 2025</div>
+    <input id="nameInput" placeholder="Введи своє ім'я 🎉">
+    <div id="greeting">Привіт, друже 1-А класу!</div>
+    <button id="wishButton">Побажання</button>
+    <button id="youtubeButton" onclick="window.open('https://www.youtube.com/playlist?list=PL6UDFwT9TzFxsVdFiEBsQ9yFpcYRPOpfO', '_blank')">YouTube 🎥</button>
     <div id="errorMessage"></div>
   </div>
 
   <a-scene
-    mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; maxTrack: 1; facingMode: environment;"
+    mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; maxTrack: 1; facingMode: environment;"
     embedded
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: true"
@@ -109,74 +136,18 @@
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <a-entity mindar-image-target="targetIndex: 0">
-      <!-- Sphere -->
-      <a-sphere id="magicSphere" position="0 0.5 0" radius="0.3" color="#0A1F44" opacity="0" segments-width="32" segments-height="32"
-                metalness="0.2" roughness="0.3" emissive="#FFD700" emissiveIntensity="0.8">
-        <a-animation attribute="scale" from="0 0 0" to="1 1 1" dur="1000" begin="showSphere"></a-animation>
-        <a-animation attribute="opacity" from="0" to="0.5" dur="1000" begin="showSphere"></a-animation>
-        <a-animation attribute="rotation" to="0 360 0" dur="8000" repeat="indefinite" easing="linear"></a-animation>
-      </a-sphere>
-
-      <!-- AR Text -->
-      <a-text id="arText" value="" color="#0A1F44" align="center" position="0 0.7 0" width="1.5" opacity="0" font="mozillavr">
+      <!-- AR Text for Wish -->
+      <a-text id="arText" value="" color="#0A1F44" align="center" position="0 0.5 0" width="1.5" opacity="0" font="mozillavr">
         <a-animation attribute="opacity" from="0" to="1" dur="1200" begin="showText"></a-animation>
         <a-animation attribute="scale" from="0.5 0.5 0.5" to="1 1 1" dur="800" begin="showText" easing="ease-out-bounce"></a-animation>
+        <a-animation attribute="material.emissiveIntensity" from="0" to="1" dur="1000" repeat="indefinite" dir="alternate" easing="ease-in-out"></a-animation> /* Підсвічування тексту */
       </a-text>
-
-      <!-- Stars -->
-      <a-entity id="stars" position="0 0.5 0">
-        <a-sphere id="star0" position="0.3 0.3 0" radius="0.1" color="#FFD700" opacity="0" class="clickable" cursor="fuse: true; fuseTimeout: 500">
-          <a-animation attribute="opacity" from="0" to="0.9" dur="1000" begin="showStars"></a-animation>
-          <a-animation attribute="position" to="0.3 0.4 0" dur="1000" repeat="indefinite" dir="alternate" easing="ease-in-out"></a-animation>
-        </a-sphere>
-        <a-sphere id="star1" position="-0.3 0.3 0" radius="0.1" color="#FF69B4" opacity="0" class="clickable" cursor="fuse: true; fuseTimeout: 500">
-          <a-animation attribute="opacity" from="0" to="0.9" dur="1000" begin="showStars"></a-animation>
-          <a-animation attribute="position" to="-0.3 0.4 0" dur="1000" repeat="indefinite" dir="alternate" easing="ease-in-out"></a-animation>
-        </a-sphere>
-        <a-sphere id="star2" position="0.3 -0.1 0" radius="0.1" color="#00BFFF" opacity="0" class="clickable" cursor="fuse: true; fuseTimeout: 500">
-          <a-animation attribute="opacity" from="0" to="0.9" dur="1000" begin="showStars"></a-animation>
-          <a-animation attribute="position" to="0.3 0 0" dur="1000" repeat="indefinite" dir="alternate" easing="ease-in-out"></a-animation>
-        </a-sphere>
-        <a-sphere id="star3" position="-0.3 -0.1 0" radius="0.1" color="#FF4500" opacity="0" class="clickable" cursor="fuse: true; fuseTimeout: 500">
-          <a-animation attribute="opacity" from="0" to="0.9" dur="1000" begin="showStars"></a-animation>
-          <a-animation attribute="position" to="-0.3 0 0" dur="1000" repeat="indefinite" dir="alternate" easing="ease-in-out"></a-animation>
-        </a-sphere>
-        <a-sphere id="star4" position="0 0.5 0.2" radius="0.1" color="#7CFC00" opacity="0" class="clickable" cursor="fuse: true; fuseTimeout: 500">
-          <a-animation attribute="opacity" from="0" to="0.9" dur="1000" begin="showStars"></a-animation>
-          <a-animation attribute="position" to="0 0.6 0.2" dur="1000" repeat="indefinite" dir="alternate" easing="ease-in-out"></a-animation>
-        </a-sphere>
-        <a-sphere id="star5" position="0 0.5 -0.2" radius="0.1" color="#BA55D3" opacity="0" class="clickable" cursor="fuse: true; fuseTimeout: 500">
-          <a-animation attribute="opacity" from="0" to="0.9" dur="1000" begin="showStars"></a-animation>
-          <a-animation attribute="position" to="0 0.6 -0.2" dur="1000" repeat="indefinite" dir="alternate" easing="ease-in-out"></a-animation>
-        </a-sphere>
-        <a-sphere id="star6" position="0.2 -0.3 0.2" radius="0.1" color="#FF6347" opacity="0" class="clickable" cursor="fuse: true; fuseTimeout: 500">
-          <a-animation attribute="opacity" from="0" to="0.9" dur="1000" begin="showStars"></a-animation>
-          <a-animation attribute="position" to="0.2 -0.2 0.2" dur="1000" repeat="indefinite" dir="alternate" easing="ease-in-out"></a-animation>
-        </a-sphere>
-        <a-sphere id="star7" position="-0.2 -0.3 -0.2" radius="0.1" color="#20B2AA" opacity="0" class="clickable" cursor="fuse: true; fuseTimeout: 500">
-          <a-animation attribute="opacity" from="0" to="0.9" dur="1000" begin="showStars"></a-animation>
-          <a-animation attribute="position" to="-0.2 -0.2 -0.2" dur="1000" repeat="indefinite" dir="alternate" easing="ease-in-out"></a-animation>
-        </a-sphere>
-        <a-sphere id="star8" position="0.4 0 0.2" radius="0.1" color="#FFD700" opacity="0" class="clickable" cursor="fuse: true; fuseTimeout: 500">
-          <a-animation attribute="opacity" from="0" to="0.9" dur="1000" begin="showStars"></a-animation>
-          <a-animation attribute="position" to="0.4 0.1 0.2" dur="1000" repeat="indefinite" dir="alternate" easing="ease-in-out"></a-animation>
-        </a-sphere>
-        <a-sphere id="star9" position="-0.4 0 -0.2" radius="0.1" color="#FF69B4" opacity="0" class="clickable" cursor="fuse: true; fuseTimeout: 500">
-          <a-animation attribute="opacity" from="0" to="0.9" dur="1000" begin="showStars"></a-animation>
-          <a-animation attribute="position" to="-0.4 0.1 -0.2" dur="1000" repeat="indefinite" dir="alternate" easing="ease-in-out"></a-animation>
-        </a-sphere>
-      </a-entity>
-
-      <!-- Confetti -->
-      <a-entity id="confetti" particle-system="preset: dust; color: #FFD700,#FF69B4,#00BFFF; particleCount: 100; size: 0.05; velocity: 0 5 0; lifetime: 2; opacity: 1; blending: additive" position="0 0.5 0" opacity="0">
-        <a-animation attribute="opacity" from="0" to="1" dur="500" begin="showConfetti"></a-animation>
-      </a-entity>
     </a-entity>
   </a-scene>
 
   <script>
     const schoolName = "Чорноморський ліцей №6";
-    const className = "4-Б";
+    const className = "1-А";
     const wishes = [
       "Сьогодні твій день для нових друзів!",
       "Усмішка робить навчання веселішим!",
@@ -192,151 +163,55 @@
       "Ти чарівник своїх успіхів!",
       "Завтра буде ще цікавіше!",
       "Сміливо мрій і відкривай нове!",
-      "Ти робиш цей світ яскравішим!",
-      "Ти станеш зіркою першого класу! 🌟 Вітаю зі школою! 🎉",
-      "Школа — це весела пригода! Будь сміливим, як герой! 🦁",
-      "Нові друзі чекають на тебе! Усміхайся яскраво! 😊",
-      "Ти маленький чарівник, і школа — твоя магія! 🪄",
-      "Кожен день у школі — це нова гра! Грай весело! 🎲",
-      "Твої малюнки та літери — це скарби! 📚✨",
-      "Школа — твій новий дім пригод! Будь супер! 🚀",
-      "Дзвоник дзвенить для тебе! Сьогодні твій день! 🔔",
-      "Ти зробиш уроки веселими, як свято! 🎈",
-      "Мрій і вчися — ти справжня зірочка! 🌈"
+      "Ти робиш цей світ яскравішим!"
     ];
 
     const inputName = document.getElementById('nameInput');
-    const button = document.getElementById('predictButton');
-    const result = document.getElementById('resultText');
+    const greeting = document.getElementById('greeting');
+    const wishButton = document.getElementById('wishButton');
+    const youtubeButton = document.getElementById('youtubeButton');
     const arText = document.getElementById('arText');
-    const confetti = document.getElementById('confetti');
     const sound = document.getElementById('magicSound');
     const errorMessage = document.getElementById('errorMessage');
-    const stars = document.querySelectorAll('.clickable');
-    let usedWishes = [];
+    const scene = document.querySelector('a-scene');
 
-    // Debug: Check MindAR support
-    if (!AFRAME.components['mindar-image-target']) {
-      errorMessage.style.display = 'block';
-      errorMessage.textContent = 'Ваш пристрій не підтримує AR. Спробуйте інший браузер або пристрій.';
-      console.error('MindAR не підтримується');
-    }
+    let arStarted = false;
 
-    // Initialize sphere and stars
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log('Документ завантажено, ініціалізація сцени');
-      const sphere = document.querySelector('#magicSphere');
-      const starsContainer = document.querySelector('#stars');
-      if (sphere && starsContainer) {
-        sphere.emit('showSphere');
-        starsContainer.emit('showStars');
-        console.log('Сферу та зірки ініціалізовано');
-      } else {
-        console.error('Сфера або зірки не знайдені');
-        errorMessage.style.display = 'block';
-        errorMessage.textContent = 'Помилка ініціалізації AR-елементів';
-      }
+    // Update greeting on name input
+    inputName.addEventListener('input', () => {
+      const name = inputName.value || 'друже';
+      greeting.textContent = `Привіт, ${name} 1-А класу!`;
     });
 
-    // Function to trigger a wish
-    function triggerWish(starIndex) {
-      console.log(`Запуск побажання для зірки ${starIndex}`);
+    // Button click to start AR and play sound
+    wishButton.addEventListener('click', () => {
+      const name = inputName.value || 'Друже';
+      const wish = wishes[Math.floor(Math.random() * wishes.length)];
+      const message = `${name}, \n${wish}`;
+      arText.setAttribute('value', message);
+
       sound.currentTime = 0;
-      sound.play().catch(err => {
-        console.error('Помилка відтворення звуку:', err);
-        errorMessage.style.display = 'block';
-        errorMessage.textContent = 'Не вдалося відтворити звук. Перевірте файл magic.mp3';
-      });
+      sound.play().catch(err => console.error('Помилка звуку:', err));
 
-      const name = inputName.value || "Першокласник";
-      let wishIndex;
-
-      // Select a random unused wish
-      do {
-        wishIndex = Math.floor(Math.random() * wishes.length);
-      } while (usedWishes.includes(wishIndex) && usedWishes.length < wishes.length);
-
-      if (usedWishes.length >= wishes.length) {
-        usedWishes = [];
-        console.log('Список побажань скинуто');
+      if (!arStarted) {
+        scene.components['mindar-image'].system.start();
+        arStarted = true;
       }
-      usedWishes.push(wishIndex);
 
-      const message = `Привіт, ${name} з ${className} класу!\nМагічна куля ${schoolName} має для тебе побажання ✨\n${wishes[wishIndex]}`;
-      result.innerText = message; // 2D text
-      arText.setAttribute('value', message); // AR text
-
-      // Trigger animations
       arText.emit('showText');
-      confetti.emit('showConfetti');
-      console.log('Анімації тексту та конфетті запущено');
-
-      // Speech synthesis
-      if ('speechSynthesis' in window) {
-        const voices = speechSynthesis.getVoices();
-        const utterance = new SpeechSynthesisUtterance(message.replace(/\n/g, ' '));
-        utterance.voice = voices.find(voice => voice.name.includes('Child')) || voices[0] || null;
-        utterance.pitch = 1.5;
-        utterance.rate = 1.2;
-        speechSynthesis.speak(utterance);
-        console.log('Озвучення запущено');
-      } else {
-        errorMessage.style.display = 'block';
-        errorMessage.textContent = 'Озвучення не підтримується в цьому браузері';
-        console.error('SpeechSynthesis не підтримується');
-      }
-    }
-
-    // Button click to trigger a random star
-    button.addEventListener('click', () => {
-      console.log('Кнопку "Магія" натиснуто');
-      const visibleStars = Array.from(stars).filter(star => star.getAttribute('visible') !== 'false');
-      if (visibleStars.length > 0) {
-        const randomStarIndex = Math.floor(Math.random() * visibleStars.length);
-        const randomStar = visibleStars[randomStarIndex];
-        randomStar.emit('click');
-        console.log(`Випадкова зірка ${randomStar.id} активована`);
-      } else {
-        errorMessage.style.display = 'block';
-        errorMessage.textContent = 'Усі зірочки використано! Перезавантажте сторінку';
-        console.log('Усі зірки використано');
-      }
+      youtubeButton.style.display = 'block'; /* Показати кнопку YouTube після натискання */
     });
 
-    // Star click handlers
-    stars.forEach((star, index) => {
-      star.addEventListener('click', () => {
-        console.log(`Зірочка ${index} (${star.id}) натиснута`);
-        triggerWish(index);
-        star.setAttribute('opacity', '0');
-        star.setAttribute('visible', 'false');
-      });
-    });
-
-    // Check camera access
+    // Camera check
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       .then(stream => {
         console.log('Задня камера активована');
       })
       .catch(err => {
         errorMessage.style.display = 'block';
-        errorMessage.textContent = 'Не вдалося отримати доступ до задньої камери. Дозвольте доступ у браузері або перевірте пристрій';
+        errorMessage.textContent = 'Не вдалося активувати задню камеру. Перевірте дозволи.';
         console.error('Помилка камери:', err);
       });
-
-    // Debug marker detection
-    document.querySelector('a-scene').addEventListener('arReady', () => {
-      console.log('MindAR готовий, маркер може бути розпізнаний');
-    });
-    document.querySelector('a-scene').addEventListener('targetFound', () => {
-      console.log('Маркер розпізнано');
-      errorMessage.style.display = 'none';
-    });
-    document.querySelector('a-scene').addEventListener('targetLost', () => {
-      console.log('Маркер втрачено');
-      errorMessage.style.display = 'block';
-      errorMessage.textContent = 'Маркер не розпізнано. Наведіть камеру на зображення';
-    });
   </script>
 </body>
 </html>
