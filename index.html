@@ -1,183 +1,236 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Магічна куля</title>
-  <!-- AR.js -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Зірочки Першокласника</title>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-  <style>
-    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
-    #arScene { width: 100%; height: 100vh; }
-    .hidden { display: none; }
 
-    /* Стартовий екран */
+  <style>
+    :root {
+      --primary-color: #FFD700;
+      --secondary-color: #FF69B4;
+      --text-color: #0A1F44;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: 'Comic Sans MS', sans-serif;
+      height: 100%;
+      width: 100%;
+      background: transparent;
+    }
+    a-scene {
+      width: 100%;
+      height: 100vh;
+      z-index: -1;
+    }
     .overlay {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(255, 255, 255, 0.9);
-      padding: 25px;
-      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 15px;
+      border-radius: 15px;
       text-align: center;
       z-index: 1000;
+      max-width: 300px;
+      animation: bounce 2s infinite;
     }
     .overlay h2 {
-      font-size: 24px;
-      margin-bottom: 15px;
+      font-size: 20px;
+      color: var(--text-color);
+      text-shadow: 0 0 8px var(--primary-color);
+      margin-bottom: 10px;
+      animation: glow 1.5s infinite alternate;
     }
     .overlay input {
-      font-size: 20px;
-      padding: 10px;
+      font-size: 16px;
+      padding: 8px;
       width: 80%;
       border-radius: 10px;
-      border: 2px solid #007bff;
-      margin-bottom: 15px;
+      border: 2px solid var(--secondary-color);
+      background: rgba(255, 255, 255, 0.7);
+      margin-bottom: 10px;
     }
     .btn {
-      margin-top: 10px;
-      padding: 15px 25px;
-      background: #007bff;
-      color: white;
-      font-size: 20px;
-      border: none;
+      padding: 8px 15px;
+      font-size: 18px;
+      background: var(--secondary-color);
+      color: #FFFFFF;
       border-radius: 10px;
+      border: none;
       cursor: pointer;
-      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      box-shadow: 0 0 8px var(--primary-color);
+      margin-bottom: 8px;
+      animation: pulse 1.5s infinite;
     }
-
-    /* Магічна куля */
-    .magic-ball {
-      position: absolute;
-      top: 65%; /* зміщено нижче, щоб не перекривала маркер */
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 220px;
-      height: 220px;
-      background: rgba(0, 100, 255, 0.3); /* більше прозорості */
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: yellow;
-      font-size: 28px; /* більший шрифт для дітей */
-      font-weight: bold;
-      text-align: center;
-      padding: 20px;
-      text-shadow: 2px 2px 5px black; /* краща читабельність */
-      z-index: 999;
-      animation: pulse 1s infinite alternate;
+    #youtubeButton {
+      background: #FF0000;
+      display: none;
+      animation: spin 2s infinite linear;
     }
-    @keyframes pulse {
-      from { box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
-      to { box-shadow: 0 0 25px rgba(255, 215, 0, 0.9); }
+    #errorMessage {
+      display: none;
+      color: red;
+      font-size: 14px;
+      margin-top: 8px;
     }
-
-    /* Підпис у куті */
     .footer {
       position: absolute;
       bottom: 20px;
       right: 20px;
-      color: white;
+      color: var(--text-color);
       font-size: 14px;
+      text-shadow: 1px 1px 3px var(--primary-color);
       z-index: 1000;
-      text-shadow: 1px 1px 3px black;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+      50% { transform: translate(-50%, -50%) translateY(-8px); }
+    }
+    @keyframes glow {
+      0% { text-shadow: 0 0 5px var(--primary-color); }
+      100% { text-shadow: 0 0 12px var(--secondary-color); }
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-  <div id="arScene" class="hidden">
+  <div id="arScene">
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-      <!-- Маркер -->
-      <a-marker type="image" url="marker.png" preset="targetSize">
-        <a-entity id="magicBall" 
-                  geometry="primitive: sphere; radius: 1"
-                  material="color: blue; transparent: true; opacity: 0.3"
-                  scale="0.5 0.5 0.5"
-                  position="0 0 0">
-        </a-entity>
+      <a-assets>
+        <audio id="magicSound" src="./magic.mp3" preload="auto"></audio>
+        <a-asset-item id="mozillavr-font" src="https://cdn.aframe.io/fonts/mozillavr.fnt"></a-asset-item>
+      </a-assets>
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-marker type="image" url="marker.png">
+        <a-text id="arText" value="" color="#0A1F44" align="center" position="0 0.5 0" width="1.2" opacity="0" font="mozillavr">
+          <a-animation attribute="opacity" from="0" to="1" dur="1200" begin="showText"></a-animation>
+          <a-animation attribute="scale" from="0.5 0.5 0.5" to="1 1 1" dur="800" begin="showText" easing="ease-out-bounce"></a-animation>
+          <a-animation attribute="material.emissiveIntensity" from="0" to="1" dur="1000" repeat="indefinite" dir="alternate" easing="ease-in-out"></a-animation>
+        </a-text>
       </a-marker>
     </a-scene>
   </div>
 
-  <!-- Інтерфейс перед запуском -->
   <div id="startScreen" class="overlay">
-    <h2>Введи своє ім'я:</h2>
-    <input type="text" id="nameInput" placeholder="Наприклад: Олена" />
-    <button class="btn" onclick="startMagic()">Магія!</button>
+    <h2 id="greeting">Привіт, друже 1-А класу!</h2>
+    <input type="text" id="nameInput" placeholder="Введи своє ім'я 🎉">
+    <button class="btn" id="wishButton">Побажання</button>
+    <button class="btn" id="youtubeButton" onclick="window.open('https://www.youtube.com/playlist?list=PL6UDFwT9TzFxsVdFiEBsQ9yFpcYRPOpfO', '_blank')">YouTube 🎥</button>
+    <div id="errorMessage"></div>
   </div>
 
-  <!-- Магічна куля -->
-  <div id="magicBallDiv" class="magic-ball hidden"></div>
-
-  <!-- Напис у куті -->
   <div class="footer">@SmartLessa</div>
 
-  <!-- Кнопка "Спробувати ще раз" -->
-  <div id="retryBtn" class="btn hidden" style="position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);">
-    Спробувати ще раз
-  </div>
-
   <script>
-    const audio = new Audio('magic.mp3');
-    const nameInput = document.getElementById('nameInput');
-    const startScreen = document.getElementById('startScreen');
-    const magicBallDiv = document.getElementById('magicBallDiv');
-    const retryBtn = document.getElementById('retryBtn');
+    const className = "1-А";
+    const wishes = [
+      "Сьогодні твій день для нових друзів!",
+      "Усмішка робить навчання веселішим!",
+      "Кожна буква – крок до нових пригод!",
+      "Ти маленький чарівник у великій школі!",
+      "Кожен день приносить нові ідеї!",
+      "Твоє серце світиться щастям!",
+      "Грай і вчися одночасно – це магія!",
+      "Ти зможеш все, що задумав!",
+      "Усмішка допомагає вчитися легко!",
+      "Кожна книжка – скарб знань!",
+      "Твоя фантазія робить день яскравим!",
+      "Ти чарівник своїх успіхів!",
+      "Завтра буде ще цікавіше!",
+      "Сміливо мрій і відкривай нове!",
+      "Ти робиш цей світ яскравішим!"
+    ];
 
-    // Відкрити AR після натискання кнопки
-    function startMagic() {
-      const name = nameInput.value.trim();
-      if (!name) {
-        alert("Будь ласка, введи ім'я!");
+    const nameInput = document.getElementById('nameInput');
+    const greeting = document.getElementById('greeting');
+    const wishButton = document.getElementById('wishButton');
+    const youtubeButton = document.getElementById('youtubeButton');
+    const arText = document.getElementById('arText');
+    const sound = document.getElementById('magicSound');
+    const errorMessage = document.getElementById('errorMessage');
+    const startScreen = document.getElementById('startScreen');
+
+    // Update greeting on name input
+    nameInput.addEventListener('input', () => {
+      const name = nameInput.value.trim() || 'друже';
+      greeting.textContent = `Привіт, ${name} ${className} класу!`;
+      console.log(`Оновлено привітання: Привіт, ${name} ${className} класу!`);
+    });
+
+    // Button click to show wish and trigger AR
+    wishButton.addEventListener('click', () => {
+      console.log('Кнопку "Побажання" натиснуто');
+      const name = nameInput.value.trim() || 'Друже';
+      if (!nameInput.value.trim()) {
+        errorMessage.style.display = 'block';
+        errorMessage.textContent = 'Будь ласка, введи ім’я!';
         return;
       }
 
-      // Приховати форму
+      // Hide start screen
       startScreen.classList.add('hidden');
-      // Запустити AR
-      document.getElementById('arScene').classList.remove('hidden');
+      console.log('Стартовий екран приховано');
 
-      // Почати аудіо
-      audio.play();
+      // Play sound
+      sound.currentTime = 0;
+      sound.play().catch(err => {
+        console.error('Помилка відтворення звуку:', err);
+        errorMessage.style.display = 'block';
+        errorMessage.textContent = 'Не вдалося відтворити звук. Перевірте magic.mp3.';
+      });
 
-      // Генерувати випадкове побажання
-      setTimeout(() => {
-        const wishes = [
-          "Ти будеш найкращим учнем!",
-          "Ти знайдеш сховану скарбницю!",
-          "Ти зможеш говорити з тваринами!",
-          "Ти станеш майстром рисунку!",
-          "Ти зробиш світ кращим!",
-          "Ти отримаєш магічну книжку!",
-          "Ти полетиш у космос!",
-          "Ти зможеш знати всі відповіді!",
-          "Ти зустрінеш дракона!",
-          "Ти станеш героєм!",
-          "Ти зможеш перетворитись на ведмедя!",
-          "Ти знайдеш магічну зірку!",
-          "Ти будеш завжди веселим!",
-          "Ти отримаєш магічну ракету!",
-          "Ти зможеш летіти!"
-        ];
+      // Show wish in AR
+      const wish = wishes[Math.floor(Math.random() * wishes.length)];
+      const message = `${name}, \n${wish}`;
+      arText.setAttribute('value', message);
+      arText.emit('showText');
+      console.log(`AR-текст встановлено: ${message}`);
 
-        const randomWish = wishes[Math.floor(Math.random() * wishes.length)];
-        magicBallDiv.textContent = randomWish;
-        magicBallDiv.classList.remove('hidden');
-        retryBtn.classList.remove('hidden');
-      }, 1500);
-    }
+      // Show YouTube button
+      youtubeButton.style.display = 'block';
+      console.log('Кнопка YouTube відображена');
+    });
 
-    // Перезапустити гру
-    retryBtn.addEventListener('click', () => {
-      magicBallDiv.classList.add('hidden');
-      retryBtn.classList.add('hidden');
-      document.getElementById('arScene').classList.add('hidden');
-      startScreen.classList.remove('hidden');
-      nameInput.value = '';
-      audio.currentTime = 0;
+    // Check camera access
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      .then(stream => {
+        console.log('Задня камера активована');
+        stream.getTracks().forEach(track => track.stop());
+      })
+      .catch(err => {
+        errorMessage.style.display = 'block';
+        errorMessage.textContent = 'Не вдалося активувати задню камеру. Перевірте дозволи.';
+        console.error('Помилка камери:', err);
+      });
+
+    // Debug marker detection
+    document.querySelector('a-scene').addEventListener('arjs-video-ready', () => {
+      console.log('AR.js готовий');
+    });
+    document.querySelector('a-marker').addEventListener('markerFound', () => {
+      console.log('Маркер розпізнано');
+      errorMessage.style.display = 'none';
+    });
+    document.querySelector('a-marker').addEventListener('markerLost', () => {
+      console.log('Маркер втрачено');
+      errorMessage.style.display = 'block';
+      errorMessage.textContent = 'Маркер не розпізнано. Наведіть камеру на картку.';
     });
   </script>
 </body>
 </html>
+
