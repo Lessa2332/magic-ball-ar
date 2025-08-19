@@ -1,77 +1,159 @@
  <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AR Magic Ball</title>
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <style>
-        body { margin: 0; font-family: Arial, sans-serif; }
-        #nameInput { position: absolute; top: 10px; left: 10px; padding: 5px; }
-        #magicButton { position: absolute; top: 40px; left: 10px; padding: 5px; }
-        #tryAgain { position: absolute; bottom: 10px; right: 10px; padding: 5px; }
-        #smartLessa { position: absolute; bottom: 10px; right: 10px; padding: 5px; color: #00f; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Магічна куля</title>
+  <!-- AR.js -->
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <!-- Three.js (вже в AR.js) -->
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #arScene { width: 100%; height: 100vh; }
+    .hidden { display: none; }
+    .overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 15px;
+      text-align: center;
+      font-family: Arial, sans-serif;
+      z-index: 1000;
+    }
+    .btn {
+      margin-top: 10px;
+      padding: 10px 20px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .magic-ball {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 200px;
+      height: 200px;
+      background: rgba(0, 100, 255, 0.5);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: yellow;
+      font-size: 16px;
+      font-weight: bold;
+      z-index: 999;
+      animation: pulse 1s infinite alternate;
+    }
+    @keyframes pulse {
+      from { box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+      to { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
+    }
+    .footer {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      color: white;
+      font-size: 12px;
+      z-index: 1000;
+    }
+  </style>
 </head>
 <body>
-    <a-scene embedded arjs>
-        <a-marker type="pattern" url="targets.mind">
-            <a-plane position="0 0 0" rotation="-90 0 0" width="1" height="1" color="transparent" opacity="0.5"></a-plane>
-            <a-entity id="ball" visible="false" geometry="primitive: sphere; radius: 0.3" material="color: #00f; opacity: 0.7" position="0 0 0">
-                <a-animation attribute="scale" from="1 1 1" to="1.2 1.2 1.2" dur="1000" direction="alternate" repeat="indefinite"></a-animation>
-                <a-animation attribute="material.color" from="#00f" to="#ff0" dur="1000" direction="alternate" repeat="indefinite"></a-animation>
-                <a-text value="" align="center" position="0 0 0" scale="0.5 0.5 0.5"></a-text>
-            </a-entity>
-        </a-marker>
-        <a-entity camera></a-entity>
+  <div id="arScene" class="hidden">
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+      <!-- Маркер -->
+      <a-marker type="image" url="marker.png" preset="targetSize">
+        <a-entity id="magicBall" 
+                  geometry="primitive: sphere; radius: 1"
+                  material="color: blue; transparent: true; opacity: 0.5"
+                  scale="0.5 0.5 0.5"
+                  position="0 0 0">
+        </a-entity>
+      </a-marker>
     </a-scene>
-    <input type="text" id="nameInput" placeholder="Введи своє ім'я">
-    <button id="magicButton">Магія</button>
-    <button id="tryAgain" style="display:none;">Спробувати ще раз</button>
-    <div id="smartLessa">@SmartLessa</div>
-    <audio id="magicSound" src="magic.mp3"></audio>
+  </div>
 
-    <script>
+  <!-- Інтерфейс перед запуском -->
+  <div id="startScreen" class="overlay">
+    <h2>Введи своє ім'я:</h2>
+    <input type="text" id="nameInput" placeholder="Наприклад: Олена" />
+    <button class="btn" onclick="startMagic()">Магія!</button>
+  </div>
+
+  <!-- Магічна куля -->
+  <div id="magicBallDiv" class="magic-ball hidden"></div>
+
+  <!-- Напис у куті -->
+  <div class="footer">@SmartLessa</div>
+
+  <!-- Кнопка "Спробувати ще раз" -->
+  <div id="retryBtn" class="btn hidden" style="position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);">Спробувати ще раз</div>
+
+  <script>
+    const audio = new Audio('magic.mp3');
+    const nameInput = document.getElementById('nameInput');
+    const startScreen = document.getElementById('startScreen');
+    const magicBallDiv = document.getElementById('magicBallDiv');
+    const retryBtn = document.getElementById('retryBtn');
+
+    // Відкрити AR після натискання кнопки
+    function startMagic() {
+      const name = nameInput.value.trim();
+      if (!name) {
+        alert("Будь ласка, введи ім'я!");
+        return;
+      }
+
+      // Приховати форму
+      startScreen.classList.add('hidden');
+      // Запустити AR
+      document.getElementById('arScene').classList.remove('hidden');
+
+      // Почати аудіо
+      audio.play();
+
+      // Генерувати випадкове побажання
+      setTimeout(() => {
         const wishes = [
-            "Бажаю тобі багато сміху!",
-            "Нехай твої мрії збуваються!",
-            "Ти найкращий друг!",
-            "Нехай кожен день буде радісним!",
-            "Бажаю тобі здоров’я!",
-            "Ти дуже талановитий!",
-            "Нехай усе вдається!",
-            "Ти світло для всіх навколо!",
-            "Бажаю тобі пригод!",
-            "Ти завжди в моєму серці!",
-            "Нехай сонце завжди світить для тебе!",
-            "Ти маєш велике майбутнє!",
-            "Бажаю тобі щастя щодня!",
-            "Ти найкращий у світі!",
-            "Нехай твоя усмішка ніколи не зникає!"
+          "Ти будеш найкращим учнем!",
+          "Ти знайдеш сховану скарбницю!",
+          "Ти зможеш говорити з тваринами!",
+          "Ти станеш майстром рисунку!",
+          "Ти зробиш світ кращим!",
+          "Ти отримаєш магічну книжку!",
+          "Ти полетиш у космос!",
+          "Ти зможеш знати всі відповіді!",
+          "Ти зустрінеш дракона!",
+          "Ти станеш героям!",
+          "Ти зможеш перетворитись на ведмедя!",
+          "Ти знайдеш магічну зірку!",
+          "Ти будеш завжди веселим!",
+          "Ти отримаєш магічну ракету!",
+          "Ти зможеш летіти!"
         ];
 
-        document.getElementById('magicButton').addEventListener('click', () => {
-            const name = document.getElementById('nameInput').value;
-            if (name) {
-                document.getElementById('magicSound').play();
-                const ball = document.getElementById('ball');
-                ball.setAttribute('visible', true);
-                const randomWish = wishes[Math.floor(Math.random() * wishes.length)];
-                ball.querySelector('a-text').setAttribute('value', randomWish);
-                document.getElementById('magicButton').style.display = 'none';
-                document.getElementById('nameInput').style.display = 'none';
-                document.getElementById('tryAgain').style.display = 'block';
-            }
-        });
+        const randomWish = wishes[Math.floor(Math.random() * wishes.length)];
+        magicBallDiv.textContent = randomWish;
+        magicBallDiv.classList.remove('hidden');
+        retryBtn.classList.remove('hidden');
+      }, 1500);
+    }
 
-        document.getElementById('tryAgain').addEventListener('click', () => {
-            document.getElementById('ball').setAttribute('visible', false);
-            document.getElementById('magicButton').style.display = 'block';
-            document.getElementById('nameInput').style.display = 'block';
-            document.getElementById('tryAgain').style.display = 'none';
-            document.getElementById('nameInput').value = '';
-        });
-    </script>
+    // Перезапустити гру
+    retryBtn.addEventListener('click', () => {
+      magicBallDiv.classList.add('hidden');
+      retryBtn.classList.add('hidden');
+      document.getElementById('arScene').classList.add('hidden');
+      startScreen.classList.remove('hidden');
+      nameInput.value = '';
+      audio.currentTime = 0;
+    });
+  </script>
 </body>
 </html>
