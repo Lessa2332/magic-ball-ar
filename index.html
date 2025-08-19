@@ -10,14 +10,22 @@
   <script src="https://cdn.jsdelivr.net/npm/aframe-particle-system-component@1.1.3/dist/aframe-particle-system-component.min.js"></script>
 
   <style>
-    body, html { margin:0; padding:0; overflow:hidden; font-family: 'Comic Sans MS', sans-serif; height:100%; width:100%; background: linear-gradient(to bottom, #FFD700, #FF69B4); }
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: 'Comic Sans MS', sans-serif;
+      height: 100%;
+      width: 100%;
+      background: transparent; /* Прозорий фон для AR */
+    }
     a-scene {
       position: fixed;
-      top:0;
-      left:0;
-      width:100vw;
-      height:100vh;
-      z-index:1;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
     }
     #uiContainer {
       position: fixed;
@@ -26,19 +34,30 @@
       transform: translateX(-50%);
       z-index: 100;
       text-align: center;
-      background: rgba(255,255,255,0.3);
-      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.4); /* Напівпрозорий білий для UI */
+      padding: 10px 14px;
       border-radius: 15px;
-      box-shadow: 0 0 10px #FFD700;
+      box-shadow: 0 0 8px #FFD700;
+      max-width: 80%; /* Зменшуємо розмір UI */
     }
     #nameInput {
-      padding:10px; font-size:18px; border-radius:10px; border:2px solid #FF69B4;
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: 2px solid #FF69B4; /* Рожева рамка */
+      background: #FFFACD; /* Світло-жовтий фон для поля */
     }
     #instruction {
-      font-size:16px; color:#0A1F44; margin-top:5px;
+      font-size: 14px;
+      color: #0A1F44;
+      margin-top: 5px;
+      text-shadow: 0 0 5px #FFD700; /* Жовта тінь для святковості */
     }
     #signature {
-      font-size:14px; color:#0A1F44; opacity:0.8; margin-top:5px;
+      font-size: 12px;
+      color: #0A1F44;
+      opacity: 0.8;
+      margin-top: 5px;
     }
   </style>
 </head>
@@ -64,12 +83,13 @@
 
       <!-- Зірочки (10 штук) -->
       <a-entity id="stars" position="0 0.5 0">
-        <!-- Кожна зірочка — сфера з унікальним ID та кольором -->
         <a-sphere id="star0" position="0.3 0.3 0" radius="0.1" color="#FFD700" opacity="0" cursor="rayOrigin: mouse" class="clickable">
           <a-animation attribute="opacity" from="0" to="0.9" dur="1000" begin="showStars"></a-animation>
           <a-animation attribute="position" to="0.3 0.4 0" dur="1000" repeat="indefinite" dir="alternate" easing="ease-in-out"></a-animation>
         </a-sphere>
-        <a-sphere id="star1" position="-0.3 0.3 0" radius="0.1" color="#FF69B4" opacity="0" cursor="rayOrigin: mouse" class="clickable">
+        <a-sphere id="star1" position="-0.3 0.3 0წ
+
+0" radius="0.1" color="#FF69B4" opacity="0" cursor="rayOrigin: mouse" class="clickable">
           <a-animation attribute="opacity" from="0" to="0.9" dur="1000" begin="showStars"></a-animation>
           <a-animation attribute="position" to="-0.3 0.4 0" dur="1000" repeat="indefinite" dir="alternate" easing="ease-in-out"></a-animation>
         </a-sphere>
@@ -115,7 +135,7 @@
   </a-scene>
 
   <script>
-    const schoolName = "Чорноморський ліцей №6";
+    const schoolName = "Чорноморський ліцей № 6";
     const wishes = [
       "Ти станеш зіркою першого класу! 🌟 Вітаю зі школою! 🎉",
       "Школа — це весела пригода! Будь сміливим, як герой! 🦁",
@@ -134,12 +154,17 @@
     const confetti = document.getElementById('confetti');
     const sound = document.getElementById('magicSound');
     const stars = document.querySelectorAll('.clickable');
-    let usedWishes = []; // Відстежуємо використані побажання
+    let usedWishes = [];
 
-    // Показуємо зірочки після завантаження сцени
-    document.querySelector('#stars').emit('showStars');
+    // Дебагінг MindAR
+    document.querySelector('a-scene').addEventListener('targetFound', () => {
+      console.log('Маркер розпізнано!');
+      document.querySelector('#stars').emit('showStars');
+    });
+    document.querySelector('a-scene').addEventListener('targetLost', () => {
+      console.log('Маркер втрачено.');
+    });
 
-    // Додаємо обробники кліків для кожної зірочки
     stars.forEach((star, index) => {
       star.addEventListener('click', () => {
         console.log(`Зірочка ${index} натиснута!`);
@@ -149,24 +174,21 @@
         const name = inputName.value || "Першокласник";
         let wishIndex;
 
-        // Вибираємо випадкове невикористане побажання
         do {
           wishIndex = Math.floor(Math.random() * wishes.length);
         } while (usedWishes.includes(wishIndex) && usedWishes.length < wishes.length);
 
         if (usedWishes.length >= wishes.length) {
-          usedWishes = []; // Скидаємо, якщо всі побажання використані
+          usedWishes = [];
         }
         usedWishes.push(wishIndex);
 
         const message = `Привіт, ${name}! 🎒\n${wishes[wishIndex]}`;
         arText.setAttribute('value', message);
 
-        // Запускаємо анімації
         arText.emit('showText');
         confetti.emit('showConfetti');
 
-        // Голосове озвучення
         if ('speechSynthesis' in window) {
           const utterance = new SpeechSynthesisUtterance(message.replace(/\n/g, ' '));
           utterance.voice = speechSynthesis.getVoices().find(voice => voice.name.includes('Child')) || speechSynthesis.getVoices()[0];
@@ -175,7 +197,6 @@
           speechSynthesis.speak(utterance);
         }
 
-        // Ховаємо натиснуту зірочку
         star.setAttribute('opacity', '0');
         star.setAttribute('visible', 'false');
       });
@@ -183,4 +204,3 @@
   </script>
 </body>
 </html>
-
