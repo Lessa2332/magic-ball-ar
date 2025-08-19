@@ -9,18 +9,39 @@
 <script src="https://cdn.jsdelivr.net/npm/mind-ar/dist/mindar-image-aframe.prod.js"></script>
 
 <style>
-body, html { margin:0; padding:0; overflow:hidden; font-family: 'Segoe UI', sans-serif; }
-#uiContainer {
-  position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
-  z-index:10; text-align:center;
-  background: rgba(255,255,255,0.1); padding:5px; border-radius:8px;
+body, html { margin:0; padding:0; overflow:hidden; font-family: 'Segoe UI', sans-serif; height:100%; width:100%; }
+
+/* AR-сцена на весь екран */
+a-scene {
+  position: fixed;
+  top:0;
+  left:0;
+  width:100vw;
+  height:100vh;
+  z-index:1;
 }
+
+/* UI поверх сцени */
+#uiContainer {
+  position: fixed;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  text-align: center;
+  background: rgba(255,255,255,0.15);
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+
 #nameInput {
   padding:8px; font-size:16px;
 }
+
 #predictButton {
   padding:8px 12px; font-size:16px; background:#0A1F44; color:#FFD700; border-radius:8px; margin-left:5px;
 }
+
 #signature {
   font-size:12px; color:#0A1F44; opacity:0.7; margin-top:2px;
 }
@@ -43,16 +64,17 @@ body, html { margin:0; padding:0; overflow:hidden; font-family: 'Segoe UI', sans
   <a-entity mindar-image-target="targetIndex: 0">
 
     <!-- Напівпрозора куля -->
-    <a-sphere id="magicSphere" position="0 0.5 0" radius="0.3" color="#0A1F44" opacity="0.5" segments-width="32" segments-height="32"
-              metalness="0.2" roughness="0.3"
-              animation="property: rotation; to: 0 360 0; loop: true; dur: 8000">
+    <a-sphere id="magicSphere" position="0 0.5 0" radius="0.3" color="#0A1F44" opacity="0" segments-width="32" segments-height="32"
+              metalness="0.2" roughness="0.3">
+      <!-- Анімація появи та обертання -->
+      <a-animation attribute="opacity" from="0" to="0.5" dur="1000" begin="showSphere"></a-animation>
+      <a-animation attribute="rotation" to="0 360 0" dur="8000" repeat="indefinite" easing="linear"></a-animation>
     </a-sphere>
 
-   <!-- Текст всередині кулі -->
-<a-text id="arText" value="Введи ім'я та натисни Магія" color="#FFD700" align="center" position="0 0.5 0.31" width="1.2"
-        animation__color="property: material.color; from: #FFD700; to: #FFF176; dir: alternate; dur: 1000; loop: true"
-        animation__scale="property: scale; from: 1 1 1; to: 1.05 1.05 1.05; dir: alternate; dur: 800; loop: true">
-</a-text>
+    <!-- Текст всередині кулі -->
+    <a-text id="arText" value="" color="#FFD700" align="center" position="0 0.5 0.31" width="1.2" opacity="0">
+      <a-animation attribute="opacity" from="0" to="1" dur="1000" begin="showText"></a-animation>
+    </a-text>
 
     <!-- Мерехтливі зірочки -->
     <a-entity id="stars" position="0 0.5 0">
@@ -64,7 +86,7 @@ body, html { margin:0; padding:0; overflow:hidden; font-family: 'Segoe UI', sans
 </a-scene>
 
 <script>
-const schoolName = "Чорноморський ліцей № 6";
+const schoolName = "Чорноморський ліцей 6";
 const className = "4-Б";
 const wishes = [
   "Сьогодні твій день для нових друзів!",
@@ -87,6 +109,7 @@ const wishes = [
 const inputName = document.getElementById('nameInput');
 const button = document.getElementById('predictButton');
 const arText = document.getElementById('arText');
+const sphere = document.getElementById('magicSphere');
 const sound = document.getElementById('magicSound');
 
 button.addEventListener('click', () => {
@@ -94,7 +117,14 @@ button.addEventListener('click', () => {
   sound.play();
   const name = inputName.value || "Друг";
   const wish = wishes[Math.floor(Math.random() * wishes.length)];
-  arText.setAttribute('value', `Привіт, ${name} з ${className} класу!\nМагічна куля ${schoolName} має для тебе побажання ✨\n${wish}`);
+  const message = `Привіт, ${name} з ${className} класу!\nМагічна куля ${schoolName} має для тебе побажання ✨\n${wish}`;
+  
+  // Встановлюємо текст
+  arText.setAttribute('value', message);
+  
+  // Запускаємо анімації появи
+  sphere.emit('showSphere');
+  arText.emit('showText');
 });
 </script>
 
