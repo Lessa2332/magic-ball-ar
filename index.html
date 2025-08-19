@@ -19,9 +19,10 @@
       margin: 0;
       padding: 0;
       overflow: hidden;
+      font-family: 'Comic Sans MS', 'Segoe UI', sans-serif;
       height: 100%;
       width: 100%;
-      background: transparent; /* Прозорий фон, щоб не перекривати камеру */
+      background: transparent; /* Прозорий фон */
     }
     a-scene {
       position: fixed;
@@ -29,7 +30,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      z-index: -1; /* Сцена позаду UI */
+      z-index: -1;
     }
     #uiContainer {
       position: fixed;
@@ -78,13 +79,13 @@
   </div>
 
   <a-scene
-    mindar-image="imageTargetSrc: https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.0/examples/image-tracking/assets/card-example/card.mind; autoStart: true; maxTrack: 1;"
+    mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; maxTrack: 1;"
     embedded
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: true"
   >
     <a-assets>
-      <audio id="magicSound" src="magic.mp3" preload="auto"></audio>
+      <audio id="magicSound" src="./magic.mp3" preload="auto"></audio>
       <a-asset-item id="mozillavr-font" src="https://cdn.aframe.io/fonts/mozillavr.fnt"></a-asset-item>
     </a-assets>
 
@@ -92,7 +93,7 @@
 
     <a-entity mindar-image-target="targetIndex: 0">
       <!-- Сфера -->
-      <a-sphere id="magicSphere" position="0 0.5 0" radius="0.2" color="#0A1F44" opacity="0" segments-width="32" segments-height="32"
+      <a-sphere id="magicSphere" position="0 0.5 0" radius="0.3" color="#0A1F44" opacity="0" segments-width="32" segments-height="32"
                 metalness="0.2" roughness="0.3" emissive="#FFD700" emissiveIntensity="0.8">
         <a-animation attribute="scale" from="0 0 0" to="1 1 1" dur="1000" begin="showSphere"></a-animation>
         <a-animation attribute="opacity" from="0" to="0.5" dur="1000" begin="showSphere"></a-animation>
@@ -105,7 +106,7 @@
         <a-animation attribute="scale" from="0.5 0.5 0.5" to="1 1 1" dur="800" begin="showText" easing="ease-out-bounce"></a-animation>
       </a-text>
 
-      <!-- Зірочки (10 штук) -->
+      <!-- Зірочки -->
       <a-entity id="stars" position="0 0.5 0">
         <a-sphere id="star0" position="0.3 0.3 0" radius="0.1" color="#FFD700" opacity="0" class="clickable" cursor="fuse: true; fuseTimeout: 500">
           <a-animation attribute="opacity" from="0" to="0.9" dur="1000" begin="showStars"></a-animation>
@@ -158,6 +159,7 @@
 
   <script>
     const schoolName = "Чорноморський ліцей №6";
+    const className = "4-Б";
     const wishes = [
       "Сьогодні твій день для нових друзів!",
       "Усмішка робить навчання веселішим!",
@@ -200,11 +202,11 @@
       errorMessage.textContent = 'Ваш пристрій не підтримує AR. Спробуйте інший браузер або пристрій.';
     }
 
-    // Показуємо зірочки після завантаження сцени
+    // Показуємо зірочки та сферу після завантаження
     document.querySelector('#stars').emit('showStars');
     document.querySelector('#magicSphere').emit('showSphere');
 
-    // Додаємо обробники подій для зірок
+    // Обробка кліків по зірках
     stars.forEach((star, index) => {
       star.addEventListener('click', () => {
         console.log(`Зірочка ${index} натиснута!`);
