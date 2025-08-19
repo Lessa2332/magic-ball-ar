@@ -4,97 +4,129 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Магічна куля</title>
-  <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.0/dist/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/aframe-ar@1.0.0/dist/aframe-ar.min.js"></script>
+  <!-- AR.js -->
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   <style>
-    body { margin: 0; overflow: hidden; }
+    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
     #arScene { width: 100%; height: 100vh; }
     .hidden { display: none; }
+
+    /* Стартовий екран */
     .overlay {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(255, 255, 255, 0.95);
-      padding: 20px;
-      border-radius: 15px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 25px;
+      border-radius: 20px;
       text-align: center;
-      font-family: Arial, sans-serif;
       z-index: 1000;
-      max-width: 80%;
-      max-height: 70%;
     }
-    h2 {
+    .overlay h2 {
       font-size: 24px;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
     }
-    input[type="text"] {
-      font-size: 18px;
+    .overlay input {
+      font-size: 20px;
       padding: 10px;
-      width: 200px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
+      width: 80%;
+      border-radius: 10px;
+      border: 2px solid #007bff;
+      margin-bottom: 15px;
     }
     .btn {
       margin-top: 10px;
-      padding: 12px 24px;
+      padding: 15px 25px;
       background: #007bff;
       color: white;
+      font-size: 20px;
       border: none;
-      border-radius: 5px;
+      border-radius: 10px;
       cursor: pointer;
-      font-size: 16px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
     }
+
+    /* Магічна куля */
+    .magic-ball {
+      position: absolute;
+      top: 65%; /* зміщено нижче, щоб не перекривала маркер */
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 220px;
+      height: 220px;
+      background: rgba(0, 100, 255, 0.3); /* більше прозорості */
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: yellow;
+      font-size: 28px; /* більший шрифт для дітей */
+      font-weight: bold;
+      text-align: center;
+      padding: 20px;
+      text-shadow: 2px 2px 5px black; /* краща читабельність */
+      z-index: 999;
+      animation: pulse 1s infinite alternate;
+    }
+    @keyframes pulse {
+      from { box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+      to { box-shadow: 0 0 25px rgba(255, 215, 0, 0.9); }
+    }
+
+    /* Підпис у куті */
     .footer {
       position: absolute;
       bottom: 20px;
       right: 20px;
       color: white;
-      font-size: 12px;
+      font-size: 14px;
       z-index: 1000;
+      text-shadow: 1px 1px 3px black;
     }
   </style>
 </head>
 <body>
   <div id="arScene" class="hidden">
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+      <!-- Маркер -->
       <a-marker type="image" url="marker.png" preset="targetSize">
         <a-entity id="magicBall" 
                   geometry="primitive: sphere; radius: 1"
-                  material="color: blue; transparent: true; opacity: 0.5"
+                  material="color: blue; transparent: true; opacity: 0.3"
                   scale="0.5 0.5 0.5"
-                  position="0 0 0"
-                  visible="false">
-          <a-text id="wishText" 
-                  value="" 
-                  color="yellow" 
-                  align="center" 
-                  width="2" 
-                  position="0 0 0.5" 
-                  visible="false"></a-text>
+                  position="0 0 0">
         </a-entity>
       </a-marker>
     </a-scene>
   </div>
 
+  <!-- Інтерфейс перед запуском -->
   <div id="startScreen" class="overlay">
     <h2>Введи своє ім'я:</h2>
     <input type="text" id="nameInput" placeholder="Наприклад: Олена" />
     <button class="btn" onclick="startMagic()">Магія!</button>
   </div>
 
+  <!-- Магічна куля -->
+  <div id="magicBallDiv" class="magic-ball hidden"></div>
+
+  <!-- Напис у куті -->
   <div class="footer">@SmartLessa</div>
 
-  <div id="retryBtn" class="btn hidden" style="position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);">Спробувати ще раз</div>
+  <!-- Кнопка "Спробувати ще раз" -->
+  <div id="retryBtn" class="btn hidden" style="position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);">
+    Спробувати ще раз
+  </div>
 
   <script>
     const audio = new Audio('magic.mp3');
     const nameInput = document.getElementById('nameInput');
     const startScreen = document.getElementById('startScreen');
+    const magicBallDiv = document.getElementById('magicBallDiv');
     const retryBtn = document.getElementById('retryBtn');
-    const magicBall = document.getElementById('magicBall');
-    const wishText = document.getElementById('wishText');
 
+    // Відкрити AR після натискання кнопки
     function startMagic() {
       const name = nameInput.value.trim();
       if (!name) {
@@ -102,14 +134,15 @@
         return;
       }
 
-      // Зупинити попереднє аудіо
-      audio.pause();
-      audio.currentTime = 0;
-
+      // Приховати форму
       startScreen.classList.add('hidden');
+      // Запустити AR
       document.getElementById('arScene').classList.remove('hidden');
+
+      // Почати аудіо
       audio.play();
 
+      // Генерувати випадкове побажання
       setTimeout(() => {
         const wishes = [
           "Ти будеш найкращим учнем!",
@@ -121,7 +154,7 @@
           "Ти полетиш у космос!",
           "Ти зможеш знати всі відповіді!",
           "Ти зустрінеш дракона!",
-          "Ти станеш героям!",
+          "Ти станеш героєм!",
           "Ти зможеш перетворитись на ведмедя!",
           "Ти знайдеш магічну зірку!",
           "Ти будеш завжди веселим!",
@@ -130,16 +163,15 @@
         ];
 
         const randomWish = wishes[Math.floor(Math.random() * wishes.length)];
-        wishText.setAttribute('value', randomWish);
-        wishText.setAttribute('visible', 'true');
-        magicBall.setAttribute('visible', 'true');
+        magicBallDiv.textContent = randomWish;
+        magicBallDiv.classList.remove('hidden');
         retryBtn.classList.remove('hidden');
       }, 1500);
     }
 
+    // Перезапустити гру
     retryBtn.addEventListener('click', () => {
-      wishText.setAttribute('visible', 'false');
-      magicBall.setAttribute('visible', 'false');
+      magicBallDiv.classList.add('hidden');
       retryBtn.classList.add('hidden');
       document.getElementById('arScene').classList.add('hidden');
       startScreen.classList.remove('hidden');
