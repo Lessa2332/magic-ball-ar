@@ -22,7 +22,7 @@
       font-family: 'Comic Sans MS', 'Segoe UI', sans-serif;
       height: 100%;
       width: 100%;
-      background: transparent; /* Прозорий фон */
+      background: transparent;
     }
     a-scene {
       position: fixed;
@@ -50,6 +50,21 @@
       border-radius: 10px;
       border: 2px solid var(--secondary-color);
     }
+    #predictButton {
+      padding: 8px 12px;
+      font-size: 16px;
+      background: #0A1F44;
+      color: var(--primary-color);
+      border-radius: 8px;
+      margin-left: 5px;
+    }
+    #resultText {
+      margin-top: 8px;
+      font-size: 20px;
+      color: #0A1F44;
+      text-shadow: 0 0 5px var(--primary-color);
+      white-space: pre-line;
+    }
     #instruction {
       font-size: 16px;
       color: #0A1F44;
@@ -73,13 +88,15 @@
 <body>
   <div id="uiContainer">
     <input id="nameInput" placeholder="Введи своє ім'я, школярику! 🎉">
+    <button id="predictButton">Магія ✨</button>
     <div id="instruction">Торкнися зірочки! 🌟</div>
+    <div id="resultText"></div>
     <div id="signature">@SmartLessa - 2025</div>
     <div id="errorMessage"></div>
   </div>
 
   <a-scene
-    mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; maxTrack: 1;"
+    mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; maxTrack: 1; facingMode: environment;"
     embedded
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: true"
@@ -92,7 +109,7 @@
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <a-entity mindar-image-target="targetIndex: 0">
-      <!-- Сфера -->
+      <!-- Sphere -->
       <a-sphere id="magicSphere" position="0 0.5 0" radius="0.3" color="#0A1F44" opacity="0" segments-width="32" segments-height="32"
                 metalness="0.2" roughness="0.3" emissive="#FFD700" emissiveIntensity="0.8">
         <a-animation attribute="scale" from="0 0 0" to="1 1 1" dur="1000" begin="showSphere"></a-animation>
@@ -100,13 +117,13 @@
         <a-animation attribute="rotation" to="0 360 0" dur="8000" repeat="indefinite" easing="linear"></a-animation>
       </a-sphere>
 
-      <!-- Текст побажання -->
+      <!-- AR Text -->
       <a-text id="arText" value="" color="#0A1F44" align="center" position="0 0.7 0" width="1.5" opacity="0" font="mozillavr">
         <a-animation attribute="opacity" from="0" to="1" dur="1200" begin="showText"></a-animation>
         <a-animation attribute="scale" from="0.5 0.5 0.5" to="1 1 1" dur="800" begin="showText" easing="ease-out-bounce"></a-animation>
       </a-text>
 
-      <!-- Зірочки -->
+      <!-- Stars -->
       <a-entity id="stars" position="0 0.5 0">
         <a-sphere id="star0" position="0.3 0.3 0" radius="0.1" color="#FFD700" opacity="0" class="clickable" cursor="fuse: true; fuseTimeout: 500">
           <a-animation attribute="opacity" from="0" to="0.9" dur="1000" begin="showStars"></a-animation>
@@ -150,7 +167,7 @@
         </a-sphere>
       </a-entity>
 
-      <!-- Конфетті -->
+      <!-- Confetti -->
       <a-entity id="confetti" particle-system="preset: dust; color: #FFD700,#FF69B4,#00BFFF; particleCount: 100; size: 0.05; velocity: 0 5 0; lifetime: 2; opacity: 1; blending: additive" position="0 0.5 0" opacity="0">
         <a-animation attribute="opacity" from="0" to="1" dur="500" begin="showConfetti"></a-animation>
       </a-entity>
@@ -189,6 +206,8 @@
     ];
 
     const inputName = document.getElementById('nameInput');
+    const button = document.getElementById('predictButton');
+    const result = document.getElementById('resultText');
     const arText = document.getElementById('arText');
     const confetti = document.getElementById('confetti');
     const sound = document.getElementById('magicSound');
@@ -196,73 +215,128 @@
     const stars = document.querySelectorAll('.clickable');
     let usedWishes = [];
 
-    // Перевірка підтримки MindAR
+    // Debug: Check MindAR support
     if (!AFRAME.components['mindar-image-target']) {
       errorMessage.style.display = 'block';
       errorMessage.textContent = 'Ваш пристрій не підтримує AR. Спробуйте інший браузер або пристрій.';
+      console.error('MindAR не підтримується');
     }
 
-    // Показуємо зірочки та сферу після завантаження
-    document.querySelector('#stars').emit('showStars');
-    document.querySelector('#magicSphere').emit('showSphere');
+    // Initialize sphere and stars
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('Документ завантажено, ініціалізація сцени');
+      const sphere = document.querySelector('#magicSphere');
+      const starsContainer = document.querySelector('#stars');
+      if (sphere && starsContainer) {
+        sphere.emit('showSphere');
+        starsContainer.emit('showStars');
+        console.log('Сферу та зірки ініціалізовано');
+      } else {
+        console.error('Сфера або зірки не знайдені');
+        errorMessage.style.display = 'block';
+        errorMessage.textContent = 'Помилка ініціалізації AR-елементів';
+      }
+    });
 
-    // Обробка кліків по зірках
+    // Function to trigger a wish
+    function triggerWish(starIndex) {
+      console.log(`Запуск побажання для зірки ${starIndex}`);
+      sound.currentTime = 0;
+      sound.play().catch(err => {
+        console.error('Помилка відтворення звуку:', err);
+        errorMessage.style.display = 'block';
+        errorMessage.textContent = 'Не вдалося відтворити звук. Перевірте файл magic.mp3';
+      });
+
+      const name = inputName.value || "Першокласник";
+      let wishIndex;
+
+      // Select a random unused wish
+      do {
+        wishIndex = Math.floor(Math.random() * wishes.length);
+      } while (usedWishes.includes(wishIndex) && usedWishes.length < wishes.length);
+
+      if (usedWishes.length >= wishes.length) {
+        usedWishes = [];
+        console.log('Список побажань скинуто');
+      }
+      usedWishes.push(wishIndex);
+
+      const message = `Привіт, ${name} з ${className} класу!\nМагічна куля ${schoolName} має для тебе побажання ✨\n${wishes[wishIndex]}`;
+      result.innerText = message; // 2D text
+      arText.setAttribute('value', message); // AR text
+
+      // Trigger animations
+      arText.emit('showText');
+      confetti.emit('showConfetti');
+      console.log('Анімації тексту та конфетті запущено');
+
+      // Speech synthesis
+      if ('speechSynthesis' in window) {
+        const voices = speechSynthesis.getVoices();
+        const utterance = new SpeechSynthesisUtterance(message.replace(/\n/g, ' '));
+        utterance.voice = voices.find(voice => voice.name.includes('Child')) || voices[0] || null;
+        utterance.pitch = 1.5;
+        utterance.rate = 1.2;
+        speechSynthesis.speak(utterance);
+        console.log('Озвучення запущено');
+      } else {
+        errorMessage.style.display = 'block';
+        errorMessage.textContent = 'Озвучення не підтримується в цьому браузері';
+        console.error('SpeechSynthesis не підтримується');
+      }
+    }
+
+    // Button click to trigger a random star
+    button.addEventListener('click', () => {
+      console.log('Кнопку "Магія" натиснуто');
+      const visibleStars = Array.from(stars).filter(star => star.getAttribute('visible') !== 'false');
+      if (visibleStars.length > 0) {
+        const randomStarIndex = Math.floor(Math.random() * visibleStars.length);
+        const randomStar = visibleStars[randomStarIndex];
+        randomStar.emit('click');
+        console.log(`Випадкова зірка ${randomStar.id} активована`);
+      } else {
+        errorMessage.style.display = 'block';
+        errorMessage.textContent = 'Усі зірочки використано! Перезавантажте сторінку';
+        console.log('Усі зірки використано');
+      }
+    });
+
+    // Star click handlers
     stars.forEach((star, index) => {
       star.addEventListener('click', () => {
-        console.log(`Зірочка ${index} натиснута!`);
-        sound.currentTime = 0;
-        sound.play().catch(err => {
-          console.error('Помилка звуку:', err);
-          errorMessage.style.display = 'block';
-          errorMessage.textContent = 'Не вдалося відтворити звук. Перевірте аудіофайл.';
-        });
-
-        const name = inputName.value || "Першокласник";
-        let wishIndex;
-
-        // Вибираємо випадкове невикористане побажання
-        do {
-          wishIndex = Math.floor(Math.random() * wishes.length);
-        } while (usedWishes.includes(wishIndex) && usedWishes.length < wishes.length);
-
-        if (usedWishes.length >= wishes.length) {
-          usedWishes = [];
-        }
-        usedWishes.push(wishIndex);
-
-        const message = `Привіт, ${name}! 🎒\n${wishes[wishIndex]}`;
-        arText.setAttribute('value', message);
-
-        // Запускаємо анімації
-        arText.emit('showText');
-        confetti.emit('showConfetti');
-
-        // Голосове озвучення
-        if ('speechSynthesis' in window) {
-          const voices = speechSynthesis.getVoices();
-          const utterance = new SpeechSynthesisUtterance(message.replace(/\n/g, ' '));
-          utterance.voice = voices.find(voice => voice.name.includes('Child')) || voices[0] || null;
-          utterance.pitch = 1.5;
-          utterance.rate = 1.2;
-          speechSynthesis.speak(utterance);
-        } else {
-          errorMessage.style.display = 'block';
-          errorMessage.textContent = 'Озвучення не підтримується в цьому браузері.';
-        }
-
-        // Ховаємо натиснуту зірочку
+        console.log(`Зірочка ${index} (${star.id}) натиснута`);
+        triggerWish(index);
         star.setAttribute('opacity', '0');
         star.setAttribute('visible', 'false');
       });
     });
 
-    // Перевірка доступу до камери
-    navigator.mediaDevices.getUserMedia({ video: true })
+    // Check camera access
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      .then(stream => {
+        console.log('Задня камера активована');
+      })
       .catch(err => {
         errorMessage.style.display = 'block';
-        errorMessage.textContent = 'Не вдалося отримати доступ до камери. Дозвольте доступ у браузері.';
+        errorMessage.textContent = 'Не вдалося отримати доступ до задньої камери. Дозвольте доступ у браузері або перевірте пристрій';
         console.error('Помилка камери:', err);
       });
+
+    // Debug marker detection
+    document.querySelector('a-scene').addEventListener('arReady', () => {
+      console.log('MindAR готовий, маркер може бути розпізнаний');
+    });
+    document.querySelector('a-scene').addEventListener('targetFound', () => {
+      console.log('Маркер розпізнано');
+      errorMessage.style.display = 'none';
+    });
+    document.querySelector('a-scene').addEventListener('targetLost', () => {
+      console.log('Маркер втрачено');
+      errorMessage.style.display = 'block';
+      errorMessage.textContent = 'Маркер не розпізнано. Наведіть камеру на зображення';
+    });
   </script>
 </body>
 </html>
