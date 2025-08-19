@@ -1,247 +1,77 @@
-<!DOCTYPE html>
-<html lang="uk">
+ <!DOCTYPE html>
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Зірочки Першокласника</title>
-
-  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
-
-  <style>
-    :root {
-      --primary-color: #FFD700; /* Яскравий жовтий */
-      --secondary-color: #FF69B4; /* Яскравий рожевий */
-      --text-color: #0A1F44; /* Темно-синій для контрасту */
-    }
-    body, html {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      font-family: 'Comic Sans MS', sans-serif;
-      height: 100%;
-      width: 100%;
-      background: transparent; /* Прозорий фон для видимості камери */
-    }
-    a-scene {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -1;
-    }
-    #uiContainer {
-      position: fixed;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 100;
-      text-align: center;
-      background: rgba(255, 255, 255, 0.2); /* Максимально прозорий фон */
-      padding: 10px;
-      border-radius: 15px;
-      box-shadow: 0 0 10px var(--primary-color);
-      width: 90%;
-      max-width: 300px; /* Менший розмір для меншого перекриття */
-      animation: bounce 2s infinite;
-    }
-    #nameInput {
-      padding: 8px;
-      font-size: 16px;
-      border-radius: 10px;
-      border: 2px solid var(--secondary-color);
-      background: rgba(255, 255, 255, 0.7);
-      width: 80%;
-      margin-bottom: 8px;
-    }
-    #greeting {
-      font-size: 18px;
-      color: var(--text-color);
-      text-shadow: 0 0 8px var(--primary-color);
-      margin-bottom: 8px;
-      animation: glow 1.5s infinite alternate;
-    }
-    #wishButton {
-      padding: 8px 15px;
-      font-size: 18px;
-      background: var(--secondary-color);
-      color: #FFFFFF;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      box-shadow: 0 0 8px var(--primary-color);
-      margin-bottom: 8px;
-      animation: pulse 1.5s infinite;
-    }
-    #youtubeButton {
-      padding: 8px 15px;
-      font-size: 16px;
-      background: #FF0000; /* Червоний для YouTube */
-      color: #FFFFFF;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      display: none; /* Прихований до натискання */
-      animation: spin 2s infinite linear;
-    }
-    #errorMessage {
-      display: none;
-      color: red;
-      font-size: 14px;
-      margin-top: 8px;
-    }
-    /* Дитячі анімації */
-    @keyframes bounce {
-      0%, 100% { transform: translateX(-50%) translateY(0); }
-      50% { transform: translateX(-50%) translateY(-8px); }
-    }
-    @keyframes glow {
-      0% { text-shadow: 0 0 5px var(--primary-color); }
-      100% { text-shadow: 0 0 12px var(--secondary-color); }
-    }
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.08); }
-      100% { transform: scale(1); }
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Magic Ball</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; }
+        #nameInput { position: absolute; top: 10px; left: 10px; padding: 5px; }
+        #magicButton { position: absolute; top: 40px; left: 10px; padding: 5px; }
+        #tryAgain { position: absolute; bottom: 10px; right: 10px; padding: 5px; }
+        #smartLessa { position: absolute; bottom: 10px; right: 10px; padding: 5px; color: #00f; }
+    </style>
 </head>
-
 <body>
-  <div id="uiContainer">
-    <input id="nameInput" placeholder="Введи своє ім'я 🎉">
-    <div id="greeting">Привіт, друже 1-А класу!</div>
-    <button id="wishButton">Побажання</button>
-    <button id="youtubeButton" onclick="window.open('https://www.youtube.com/playlist?list=PL6UDFwT9TzFxsVdFiEBsQ9yFpcYRPOpfO', '_blank')">YouTube 🎥</button>
-    <div id="errorMessage"></div>
-  </div>
+    <a-scene embedded arjs>
+        <a-marker type="pattern" url="targets.mind">
+            <a-plane position="0 0 0" rotation="-90 0 0" width="1" height="1" color="transparent" opacity="0.5"></a-plane>
+            <a-entity id="ball" visible="false" geometry="primitive: sphere; radius: 0.3" material="color: #00f; opacity: 0.7" position="0 0 0">
+                <a-animation attribute="scale" from="1 1 1" to="1.2 1.2 1.2" dur="1000" direction="alternate" repeat="indefinite"></a-animation>
+                <a-animation attribute="material.color" from="#00f" to="#ff0" dur="1000" direction="alternate" repeat="indefinite"></a-animation>
+                <a-text value="" align="center" position="0 0 0" scale="0.5 0.5 0.5"></a-text>
+            </a-entity>
+        </a-marker>
+        <a-entity camera></a-entity>
+    </a-scene>
+    <input type="text" id="nameInput" placeholder="Введи своє ім'я">
+    <button id="magicButton">Магія</button>
+    <button id="tryAgain" style="display:none;">Спробувати ще раз</button>
+    <div id="smartLessa">@SmartLessa</div>
+    <audio id="magicSound" src="magic.mp3"></audio>
 
-  <a-scene
-    mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; maxTrack: 1; facingMode: environment;"
-    embedded
-    vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: true"
-  >
-    <a-assets>
-      <audio id="magicSound" src="./magic.mp3" preload="auto"></audio>
-      <a-asset-item id="mozillavr-font" src="https://cdn.aframe.io/fonts/mozillavr.fnt"></a-asset-item>
-    </a-assets>
+    <script>
+        const wishes = [
+            "Бажаю тобі багато сміху!",
+            "Нехай твої мрії збуваються!",
+            "Ти найкращий друг!",
+            "Нехай кожен день буде радісним!",
+            "Бажаю тобі здоров’я!",
+            "Ти дуже талановитий!",
+            "Нехай усе вдається!",
+            "Ти світло для всіх навколо!",
+            "Бажаю тобі пригод!",
+            "Ти завжди в моєму серці!",
+            "Нехай сонце завжди світить для тебе!",
+            "Ти маєш велике майбутнє!",
+            "Бажаю тобі щастя щодня!",
+            "Ти найкращий у світі!",
+            "Нехай твоя усмішка ніколи не зникає!"
+        ];
 
-    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+        document.getElementById('magicButton').addEventListener('click', () => {
+            const name = document.getElementById('nameInput').value;
+            if (name) {
+                document.getElementById('magicSound').play();
+                const ball = document.getElementById('ball');
+                ball.setAttribute('visible', true);
+                const randomWish = wishes[Math.floor(Math.random() * wishes.length)];
+                ball.querySelector('a-text').setAttribute('value', randomWish);
+                document.getElementById('magicButton').style.display = 'none';
+                document.getElementById('nameInput').style.display = 'none';
+                document.getElementById('tryAgain').style.display = 'block';
+            }
+        });
 
-    <a-entity mindar-image-target="targetIndex: 0">
-      <!-- AR Text for Wish -->
-      <a-text id="arText" value="" color="#0A1F44" align="center" position="0 0.5 0" width="1.2" opacity="0" font="mozillavr">
-        <a-animation attribute="opacity" from="0" to="1" dur="1200" begin="showText"></a-animation>
-        <a-animation attribute="scale" from="0.5 0.5 0.5" to="1 1 1" dur="800" begin="showText" easing="ease-out-bounce"></a-animation>
-        <a-animation attribute="material.emissiveIntensity" from="0" to="1" dur="1000" repeat="indefinite" dir="alternate" easing="ease-in-out"></a-animation>
-      </a-text>
-    </a-entity>
-  </a-scene>
-
-  <script>
-    const className = "1-А";
-    const wishes = [
-      "Сьогодні твій день для нових друзів!",
-      "Усмішка робить навчання веселішим!",
-      "Кожна буква – крок до нових пригод!",
-      "Ти маленький чарівник у великій школі!",
-      "Кожен день приносить нові ідеї!",
-      "Твоє серце світиться щастям!",
-      "Грай і вчися одночасно – це магія!",
-      "Ти зможеш все, що задумав!",
-      "Усмішка допомагає вчитися легко!",
-      "Кожна книжка – скарб знань!",
-      "Твоя фантазія робить день яскравим!",
-      "Ти чарівник своїх успіхів!",
-      "Завтра буде ще цікавіше!",
-      "Сміливо мрій і відкривай нове!",
-      "Ти робиш цей світ яскравішим!"
-    ];
-
-    const inputName = document.getElementById('nameInput');
-    const greeting = document.getElementById('greeting');
-    const wishButton = document.getElementById('wishButton');
-    const youtubeButton = document.getElementById('youtubeButton');
-    const arText = document.getElementById('arText');
-    const sound = document.getElementById('magicSound');
-    const errorMessage = document.getElementById('errorMessage');
-    const scene = document.querySelector('a-scene');
-    let arStarted = false;
-
-    // Update greeting on name input
-    inputName.addEventListener('input', () => {
-      const name = inputName.value.trim() || 'друже';
-      greeting.textContent = `Привіт, ${name} ${className} класу!`;
-    });
-
-    // Button click to start AR, play sound, and show wish
-    wishButton.addEventListener('click', () => {
-      console.log('Кнопку "Побажання" натиснуто');
-      const name = inputName.value.trim() || 'Друже';
-      const wish = wishes[Math.floor(Math.random() * wishes.length)];
-      const message = `${name}, \n${wish}`;
-      arText.setAttribute('value', message);
-
-      // Play sound
-      sound.currentTime = 0;
-      sound.play().catch(err => {
-        console.error('Помилка звуку:', err);
-        errorMessage.style.display = 'block';
-        errorMessage.textContent = 'Не вдалося відтворити звук. Перевірте файл magic.mp3.';
-      });
-
-      // Start AR if not already started
-      if (!arStarted) {
-        scene.components['mindar-image'].system.start();
-        arStarted = true;
-        console.log('AR запущено');
-      }
-
-      // Trigger text animation and show YouTube button
-      arText.emit('showText');
-      youtubeButton.style.display = 'block';
-      console.log('Текст і кнопка YouTube відображені');
-    });
-
-    // Check camera access
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      .then(stream => {
-        console.log('Задня камера активована');
-      })
-      .catch(err => {
-        errorMessage.style.display = 'block';
-        errorMessage.textContent = 'Не вдалося активувати задню камеру. Перевірте дозволи.';
-        console.error('Помилка камери:', err);
-      });
-
-    // Debug marker detection
-    scene.addEventListener('arReady', () => {
-      console.log('MindAR готовий');
-    });
-    scene.addEventListener('targetFound', () => {
-      console.log('Маркер розпізнано');
-      errorMessage.style.display = 'none';
-    });
-    scene.addEventListener('targetLost', () => {
-      console.log('Маркер втрачено');
-      errorMessage.style.display = 'block';
-      errorMessage.textContent = 'Маркер не розпізнано. Наведіть камеру на картку.';
-    });
-
-    // Check MindAR support
-    if (!AFRAME.components['mindar-image-target']) {
-      errorMessage.style.display = 'block';
-      errorMessage.textContent = 'Ваш пристрій не підтримує AR. Спробуйте інший браузер або пристрій.';
-      console.error('MindAR не підтримується');
-    }
-  </script>
+        document.getElementById('tryAgain').addEventListener('click', () => {
+            document.getElementById('ball').setAttribute('visible', false);
+            document.getElementById('magicButton').style.display = 'block';
+            document.getElementById('nameInput').style.display = 'block';
+            document.getElementById('tryAgain').style.display = 'none';
+            document.getElementById('nameInput').value = '';
+        });
+    </script>
 </body>
 </html>
-
