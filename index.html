@@ -4,8 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Магічна куля</title>
-  <!-- AR.js -->
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <!-- Надійні CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.0/dist/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-ar@1.0.0/dist/aframe-ar.min.js"></script>
   <style>
     body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; background: #000; }
     #arScene { width: 100%; height: 100vh; }
@@ -35,6 +36,7 @@
       font-size: 22px;
       padding: 12px;
       width: 80%;
+      max-width: 280px;
       border-radius: 10px;
       border: 2px solid #ff69b4;
       margin-bottom: 15px;
@@ -53,48 +55,6 @@
     }
     .btn:hover { transform: scale(1.1); }
 
-    /* Магічна куля */
-    .magic-ball {
-      position: absolute;
-      top: 65%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 240px;
-      height: 240px;
-      background: rgba(0, 100, 255, 0.3);
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      color: yellow;
-      font-size: 30px;
-      font-weight: bold;
-      text-align: center;
-      padding: 25px;
-      text-shadow: 2px 2px 5px black;
-      z-index: 999;
-      animation: pulse 1s infinite alternate;
-    }
-    @keyframes pulse {
-      from { box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
-      to { box-shadow: 0 0 30px rgba(255, 215, 0, 1); }
-    }
-
-    /* Зірочки */
-    .star {
-      position: absolute;
-      width: 15px;
-      height: 15px;
-      background: yellow;
-      border-radius: 50%;
-      box-shadow: 0 0 10px yellow;
-      animation: twinkle 2s infinite;
-    }
-    @keyframes twinkle {
-      0%,100% { opacity: 0.2; transform: scale(0.8); }
-      50% { opacity: 1; transform: scale(1.2); }
-    }
-
     /* Підпис */
     .footer {
       position: absolute;
@@ -106,7 +66,7 @@
       text-shadow: 1px 1px 3px black;
     }
 
-    /* Анімація bounce */
+    /* Анімації */
     @keyframes bounce {
       0%, 100% { transform: translate(-50%, -50%) scale(1); }
       50% { transform: translate(-50%, -52%) scale(1.05); }
@@ -115,59 +75,54 @@
 </head>
 <body>
   <div id="arScene" class="hidden">
-    <a-scene embedded arjs="sourceType: webcam; facingMode: environment; debugUIEnabled: false;">
-      <!-- Маркер -->
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
       <a-marker type="image" url="marker.png" preset="targetSize">
         <a-entity id="magicBall3D" 
                   geometry="primitive: sphere; radius: 1"
                   material="color: blue; transparent: true; opacity: 0.3"
                   scale="0.5 0.5 0.5"
                   position="0 0 0">
+          <a-text id="wishText"
+                  value=""
+                  color="yellow"
+                  align="center"
+                  width="2"
+                  position="0 0 0.5"
+                  visible="false">
+          </a-text>
         </a-entity>
       </a-marker>
     </a-scene>
   </div>
 
-  <!-- Інтерфейс перед запуском -->
   <div id="startScreen" class="overlay">
     <h2>Введи своє ім'я:</h2>
     <input type="text" id="nameInput" placeholder="Наприклад: Олена" />
-    <button class="btn" onclick="startMagic()">✨ Магія!</button>
+    <button class="btn">✨ Магія!</button>
   </div>
 
-  <!-- Магічна куля -->
-  <div id="magicBallDiv" class="magic-ball hidden"></div>
-
-  <!-- Зірочки -->
-  <div id="starsContainer"></div>
-
-  <!-- Підпис -->
   <div class="footer">@SmartLessa</div>
-
-  <!-- Кнопка "Спробувати ще раз" -->
   <div id="retryBtn" class="btn hidden" style="position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);">
     🔄 Спробувати ще раз
   </div>
 
   <script>
+    // Дозволити speechSynthesis при першому кліку
+    document.body.addEventListener('click', function enableSpeech() {
+      if ('speechSynthesis' in window) {
+        const utter = new SpeechSynthesisUtterance(' ');
+        utter.volume = 0;
+        window.speechSynthesis.speak(utter);
+      }
+      document.body.removeEventListener('click', enableSpeech);
+    }, { once: true });
+
     const audio = new Audio('magic.mp3');
     const nameInput = document.getElementById('nameInput');
     const startScreen = document.getElementById('startScreen');
-    const magicBallDiv = document.getElementById('magicBallDiv');
     const retryBtn = document.getElementById('retryBtn');
-    const starsContainer = document.getElementById('starsContainer');
+    const wishText = document.getElementById('wishText');
 
-    // Створюємо зірочки
-    for (let i = 0; i < 15; i++) {
-      const star = document.createElement('div');
-      star.className = 'star';
-      star.style.top = Math.random() * window.innerHeight + 'px';
-      star.style.left = Math.random() * window.innerWidth + 'px';
-      star.style.animationDuration = (1 + Math.random() * 2) + 's';
-      starsContainer.appendChild(star);
-    }
-
-    // Озвучування тексту
     function speak(text) {
       if ('speechSynthesis' in window) {
         const utter = new SpeechSynthesisUtterance(text);
@@ -177,7 +132,9 @@
       }
     }
 
-    // Запуск
+    // Використовуємо addEventListener замість onclick
+    document.querySelector('.btn').addEventListener('click', startMagic);
+
     function startMagic() {
       const name = nameInput.value.trim();
       if (!name) {
@@ -209,22 +166,19 @@
         ];
 
         const randomWish = wishes[Math.floor(Math.random() * wishes.length)];
-        magicBallDiv.textContent = name + ", " + randomWish;
-        magicBallDiv.classList.remove('hidden');
+        const fullText = name + ", " + randomWish;
+        wishText.setAttribute('value', fullText);
+        wishText.setAttribute('visible', 'true');
         retryBtn.classList.remove('hidden');
 
-        // Озвучення побажання
         speak(randomWish);
 
-        // Вібрація для ефекту магії
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-
       }, 1500);
     }
 
-    // Перезапуск
     retryBtn.addEventListener('click', () => {
-      magicBallDiv.classList.add('hidden');
+      wishText.setAttribute('visible', 'false');
       retryBtn.classList.add('hidden');
       document.getElementById('arScene').classList.add('hidden');
       startScreen.classList.remove('hidden');
@@ -234,6 +188,3 @@
   </script>
 </body>
 </html>
-
-
-
