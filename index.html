@@ -1,101 +1,228 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Магічна куля AR</title>
-
-<script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mind-ar/dist/mindar-image-aframe.prod.js"></script>
-
-<style>
-body, html { margin:0; padding:0; overflow:hidden; font-family: 'Segoe UI', sans-serif; }
-#uiContainer {
-  position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
-  z-index:10; text-align:center;
-}
-#nameInput {
-  padding:8px; font-size:16px;
-}
-#predictButton {
-  padding:8px 12px; font-size:16px; background:#0A1F44; color:#FFD700; border-radius:8px; margin-left:5px;
-}
-#resultText {
-  margin-top:8px; font-size:20px; color:#0A1F44; text-shadow: 0 0 5px #FFD700;
-  white-space: pre-line;
-}
-#signature {
-  font-size:12px; color:#0A1F44; opacity:0.7; margin-top:2px;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Магічна куля AR</title>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mindar@0.5.2/dist/mindar-image-aframe.prod.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: 'Poppins', 'Segoe UI', sans-serif;
+      height: 100%;
+      width: 100%;
+    }
+    a-scene {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+    }
+    #uiContainer {
+      position: fixed;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      text-align: center;
+      background: rgba(255,255,255,0.25);
+      padding: 10px 15px;
+      border-radius: 12px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    #nameInput, #predictButton, #muteButton {
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 2px solid #FFD700;
+      margin: 5px;
+    }
+    #predictButton, #muteButton {
+      background: #0A1F44;
+      color: #FFD700;
+      border: none;
+      cursor: pointer;
+    }
+    #predictButton:hover, #muteButton:hover {
+      background: #FFD700;
+      color: #0A1F44;
+    }
+    #nameInput:focus-visible, #predictButton:focus-visible, #muteButton:focus-visible {
+      outline: 3px solid #FFD700;
+      outline-offset: 2px;
+    }
+    #signature {
+      font-size: 12px;
+      color: #0A1F44;
+      margin-top: 5px;
+    }
+    #instructions {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      color: #FFD700;
+      font-size: 14px;
+      background: rgba(0,0,0,0.5);
+      padding: 5px 10px;
+      border-radius: 8px;
+    }
+    @media (max-width: 480px) {
+      #uiContainer {
+        padding: 8px 10px;
+        bottom: 10px;
+      }
+      #nameInput, #predictButton, #muteButton {
+        font-size: 14px;
+        padding: 6px;
+      }
+    }
+  </style>
 </head>
-
 <body>
-
-<div id="uiContainer">
-  <input id="nameInput" placeholder="Введи своє ім'я">
-  <button id="predictButton">Магія ✨</button>
-  <div id="resultText"></div>
-  <div id="signature">@SmartLessa - 2025</div>
-</div>
-
-<audio id="magicSound" src="./magic.mp3"></audio>
-
-<a-scene mindar-image="imageTargetSrc: ./targets.mind;" embedded color-space="sRGB" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: true">
-  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-  <a-entity mindar-image-target="targetIndex: 0">
-
-    <!-- Напівпрозора куля -->
-    <a-sphere position="0 0.5 0" radius="0.3" color="#0A1F44" opacity="0.5" segments-width="32" segments-height="32"
-              metalness="0.2" roughness="0.3"
-              animation="property: rotation; to: 0 360 0; loop: true; dur: 8000">
-    </a-sphere>
-
-    <!-- Мерехтливі зірочки -->
-    <a-entity id="stars" position="0 0.5 0">
-      <a-sphere v-for="i in 15" position="0 0 0" radius="0.02" color="#FFD700"
-        animation__blink="property: material.color; dir: alternate; dur: 800; loop: true; to: #FF69B4"></a-sphere>
+  <div id="instructions" role="alert">Відскануйте маркер камерою для AR</div>
+  <main id="uiContainer" role="region" aria-label="Інтерфейс магічної кулі">
+    <input id="nameInput" aria-label="Введіть ваше ім'я" placeholder="Введіть ім'я">
+    <button id="predictButton" aria-label="Отримати передбачення">Магія ✨</button>
+    <button id="muteButton" aria-label="Вимкнути звук">🔇</button>
+    <div id="signature">@SmartLessa - 2025</div>
+  </main>
+  <audio id="magicSound" src="assets/magic.mp3"></audio>
+  <a-scene mindar-image="imageTargetSrc: assets/targets.mind;" embedded color-space="sRGB" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: true" aria-label="AR-сцена з магічною кулею">
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+    <a-entity mindar-image-target="targetIndex: 0">
+      <a-sphere id="magicSphere" position="0 0.5 0" radius="0.3" color="#0A1F44" opacity="0" segments-width="32" segments-height="32" metalness="0.2" roughness="0.3">
+        <a-animation attribute="opacity" from="0" to="0.5" dur="1000" begin="showSphere"></a-animation>
+        <a-animation attribute="rotation" to="0 360 0" dur="8000" repeat="indefinite" easing="linear"></a-animation>
+      </a-sphere>
+      <a-text id="arText" value="" color="#FFD700" align="center" position="0 0.5 0.31" width="1.2" opacity="0" aria-live="polite">
+        <a-animation attribute="opacity" from="0" to="1" dur="1000" begin="showText"></a-animation>
+      </a-text>
+      <a-entity id="stars" position="0 0.5 0"></a-entity>
     </a-entity>
+  </a-scene>
+  <script>
+    const translations = {
+      uk: {
+        placeholder: "Введіть ім'я",
+        button: "Магія ✨",
+        mute: "🔇",
+        instructions: "Відскануйте маркер камерою для AR",
+        error: "Будь ласка, введіть ім’я!"
+      },
+      en: {
+        placeholder: "Enter your name",
+        button: "Magic ✨",
+        mute: "🔇",
+        instructions: "Scan the marker with your camera for AR",
+        error: "Please enter your name!"
+      }
+    };
 
-  </a-entity>
-</a-scene>
+    const schoolName = "Чорноморський ліцей 6";
+    const className = "4-Б";
+    const wishes = {
+      uk: [
+        "Сьогодні твій день для нових друзів!",
+        "Усмішка робить навчання веселішим!",
+        "Кожна буква – крок до нових пригод!",
+        "Ти маленький чарівник у великій школі!",
+        "Кожен день приносить нові ідеї!",
+        "Твоє серце світиться щастям!",
+        "Грай і вчися одночасно – це магія!",
+        "Ти зможеш все, що задумав!",
+        "Усмішка допомагає вчитися легко!",
+        "Кожна книжка – скарб знань!",
+        "Твоя фантазія робить день яскравим!",
+        "Ти чарівник своїх успіхів!",
+        "Завтра буде ще цікавіше!",
+        "Сміливо мрій і відкривай нове!",
+        "Ти робиш цей світ яскравішим!"
+      ],
+      en: [
+        "Today is your day to make new friends!",
+        "A smile makes learning more fun!",
+        "Every letter is a step to new adventures!",
+        "You’re a little wizard in a big school!",
+        "Each day brings new ideas!",
+        "Your heart shines with happiness!",
+        "Play and learn at the same time – it’s magic!",
+        "You can achieve anything you set your mind to!",
+        "A smile makes learning easy!",
+        "Every book is a treasure of knowledge!",
+        "Your imagination brightens the day!",
+        "You’re the wizard of your own success!",
+        "Tomorrow will be even more exciting!",
+        "Dream boldly and discover new things!",
+        "You make the world brighter!"
+      ]
+    };
 
-<script>
-const schoolName = "Чорноморський ліцей 6";
-const className = "4-Б";
-const wishes = [
-  "Сьогодні твій день для нових друзів!",
-  "Усмішка робить навчання веселішим!",
-  "Кожна буква – крок до нових пригод!",
-  "Ти маленький чарівник у великій школі!",
-  "Кожен день приносить нові ідеї!",
-  "Твоє серце світиться щастям!",
-  "Грай і вчися одночасно – це магія!",
-  "Ти зможеш все, що задумав!",
-  "Усмішка допомагає вчитися легко!",
-  "Кожна книжка – скарб знань!",
-  "Твоя фантазія робить день яскравим!",
-  "Ти чарівник своїх успіхів!",
-  "Завтра буде ще цікавіше!",
-  "Сміливо мрій і відкривай нове!",
-  "Ти робиш цей світ яскравішим!"
-];
+    let currentLang = 'uk';
+    let isMuted = false;
+    const inputName = document.getElementById('nameInput');
+    const predictButton = document.getElementById('predictButton');
+    const muteButton = document.getElementById('muteButton');
+    const instructions = document.getElementById('instructions');
+    const arText = document.getElementById('arText');
+    const sphere = document.getElementById('magicSphere');
+    const sound = document.getElementById('magicSound');
 
-const inputName = document.getElementById('nameInput');
-const button = document.getElementById('predictButton');
-const result = document.getElementById('resultText');
-const sound = document.getElementById('magicSound');
+    function updateLanguage() {
+      inputName.placeholder = translations[currentLang].placeholder;
+      predictButton.textContent = translations[currentLang].button;
+      muteButton.textContent = translations[currentLang].mute;
+      instructions.textContent = translations[currentLang].instructions;
+      document.documentElement.lang = currentLang;
+    }
 
-button.addEventListener('click', () => {
-  sound.currentTime = 0;
-  sound.play();
-  const name = inputName.value || "Друг";
-  const wish = wishes[Math.floor(Math.random() * wishes.length)];
-  result.innerText = `Привіт, ${name} з ${className} класу!\nМагічна куля ${schoolName} має для тебе побажання ✨\n${wish}`;
-});
-</script>
+    function createStars() {
+      const stars = document.getElementById('stars');
+      for (let i = 0; i < 10; i++) {
+        const sphere = document.createElement('a-sphere');
+        const angle = (i / 10) * Math.PI * 2;
+        sphere.setAttribute('position', `${Math.sin(angle) * 0.4} 0 ${Math.cos(angle) * 0.4}`);
+        sphere.setAttribute('radius', '0.02');
+        sphere.setAttribute('color', '#FFD700');
+        sphere.setAttribute('animation__blink', 'property: material.color; dir: alternate; dur: 800; loop: true; to: #FF69B4');
+        stars.appendChild(sphere);
+      }
+    }
 
+    predictButton.addEventListener('click', () => {
+      const name = inputName.value.trim();
+      if (!name) {
+        alert(translations[currentLang].error);
+        return;
+      }
+      if (!isMuted) {
+        sound.currentTime = 0;
+        sound.play().catch(() => console.error('Failed to play sound'));
+      }
+      const wish = wishes[currentLang][Math.floor(Math.random() * wishes[currentLang].length)];
+      const message = `Привіт, ${name} з ${className} класу!\nМагічна куля ${schoolName} має для тебе побажання ✨\n${wish}`;
+      arText.setAttribute('value', message);
+      sphere.emit('showSphere');
+      arText.emit('showText');
+    });
+
+    muteButton.addEventListener('click', () => {
+      isMuted = !isMuted;
+      muteButton.textContent = isMuted ? '🔊' : '🔇';
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      createStars();
+      updateLanguage();
+    });
+  </script>
 </body>
 </html>
 
