@@ -8,13 +8,12 @@
 
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-image-aframe.prod.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/aframe-particle-system-component@1.1.3/dist/aframe-particle-system-component.min.js"></script>
 
   <style>
     :root {
-      --primary-color: #FFD700; /* Жовтий для яскравості */
-      --secondary-color: #FF69B4; /* Рожевий для веселощів */
-      --background-gradient: linear-gradient(to bottom, #A3BFFA, #FEF9A7); /* Пастельний блакитно-жовтий градієнт для дітей */
+      --primary-color: #FFD700; /* Яскравий жовтий */
+      --secondary-color: #FF69B4; /* Яскравий рожевий */
+      --text-color: #0A1F44; /* Темно-синій для контрасту */
     }
     body, html {
       margin: 0;
@@ -23,7 +22,7 @@
       font-family: 'Comic Sans MS', sans-serif;
       height: 100%;
       width: 100%;
-      background: var(--background-gradient);
+      background: transparent; /* Прозорий фон для видимості камери */
     }
     a-scene {
       position: fixed;
@@ -35,75 +34,76 @@
     }
     #uiContainer {
       position: fixed;
-      top: 20px;
+      top: 10px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 100;
       text-align: center;
-      background: rgba(255, 255, 255, 0.5);
-      padding: 15px;
-      border-radius: 20px;
-      box-shadow: 0 0 15px var(--primary-color);
-      animation: bounce 2s infinite; /* Анімація стрибків для веселості */
+      background: rgba(255, 255, 255, 0.2); /* Максимально прозорий фон */
+      padding: 10px;
+      border-radius: 15px;
+      box-shadow: 0 0 10px var(--primary-color);
+      width: 90%;
+      max-width: 300px; /* Менший розмір для меншого перекриття */
+      animation: bounce 2s infinite;
     }
     #nameInput {
-      padding: 12px;
-      font-size: 20px;
-      border-radius: 15px;
-      border: 3px solid var(--secondary-color);
-      background: rgba(255, 255, 255, 0.8);
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 10px;
+      border: 2px solid var(--secondary-color);
+      background: rgba(255, 255, 255, 0.7);
       width: 80%;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     #greeting {
-      font-size: 24px;
-      color: #0A1F44;
-      text-shadow: 0 0 10px var(--primary-color);
-      margin-bottom: 10px;
-      animation: glow 1.5s infinite alternate; /* Анімація сяйва для привітання */
+      font-size: 18px;
+      color: var(--text-color);
+      text-shadow: 0 0 8px var(--primary-color);
+      margin-bottom: 8px;
+      animation: glow 1.5s infinite alternate;
     }
     #wishButton {
-      padding: 12px 20px;
-      font-size: 22px;
+      padding: 8px 15px;
+      font-size: 18px;
       background: var(--secondary-color);
       color: #FFFFFF;
-      border-radius: 15px;
+      border-radius: 10px;
       border: none;
       cursor: pointer;
-      box-shadow: 0 0 10px var(--primary-color);
-      margin-bottom: 10px;
-      animation: pulse 1.5s infinite; /* Анімація пульсації для кнопки */
+      box-shadow: 0 0 8px var(--primary-color);
+      margin-bottom: 8px;
+      animation: pulse 1.5s infinite;
     }
     #youtubeButton {
-      padding: 10px 15px;
-      font-size: 20px;
+      padding: 8px 15px;
+      font-size: 16px;
       background: #FF0000; /* Червоний для YouTube */
       color: #FFFFFF;
-      border-radius: 15px;
+      border-radius: 10px;
       border: none;
       cursor: pointer;
-      margin-top: 10px;
-      display: none; /* Початково прихований, з'являється після побажання */
-      animation: spin 2s infinite linear; /* Анімація обертання для кнопки YouTube */
+      display: none; /* Прихований до натискання */
+      animation: spin 2s infinite linear;
     }
     #errorMessage {
       display: none;
       color: red;
-      font-size: 16px;
-      margin-top: 10px;
+      font-size: 14px;
+      margin-top: 8px;
     }
-    /* Анімації для дітей */
+    /* Дитячі анімації */
     @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-8px); }
     }
     @keyframes glow {
       0% { text-shadow: 0 0 5px var(--primary-color); }
-      100% { text-shadow: 0 0 15px var(--secondary-color); }
+      100% { text-shadow: 0 0 12px var(--secondary-color); }
     }
     @keyframes pulse {
       0% { transform: scale(1); }
-      50% { transform: scale(1.1); }
+      50% { transform: scale(1.08); }
       100% { transform: scale(1); }
     }
     @keyframes spin {
@@ -137,16 +137,15 @@
 
     <a-entity mindar-image-target="targetIndex: 0">
       <!-- AR Text for Wish -->
-      <a-text id="arText" value="" color="#0A1F44" align="center" position="0 0.5 0" width="1.5" opacity="0" font="mozillavr">
+      <a-text id="arText" value="" color="#0A1F44" align="center" position="0 0.5 0" width="1.2" opacity="0" font="mozillavr">
         <a-animation attribute="opacity" from="0" to="1" dur="1200" begin="showText"></a-animation>
         <a-animation attribute="scale" from="0.5 0.5 0.5" to="1 1 1" dur="800" begin="showText" easing="ease-out-bounce"></a-animation>
-        <a-animation attribute="material.emissiveIntensity" from="0" to="1" dur="1000" repeat="indefinite" dir="alternate" easing="ease-in-out"></a-animation> /* Підсвічування тексту */
+        <a-animation attribute="material.emissiveIntensity" from="0" to="1" dur="1000" repeat="indefinite" dir="alternate" easing="ease-in-out"></a-animation>
       </a-text>
     </a-entity>
   </a-scene>
 
   <script>
-    const schoolName = "Чорноморський ліцей №6";
     const className = "1-А";
     const wishes = [
       "Сьогодні твій день для нових друзів!",
@@ -174,35 +173,44 @@
     const sound = document.getElementById('magicSound');
     const errorMessage = document.getElementById('errorMessage');
     const scene = document.querySelector('a-scene');
-
     let arStarted = false;
 
     // Update greeting on name input
     inputName.addEventListener('input', () => {
-      const name = inputName.value || 'друже';
-      greeting.textContent = `Привіт, ${name} 1-А класу!`;
+      const name = inputName.value.trim() || 'друже';
+      greeting.textContent = `Привіт, ${name} ${className} класу!`;
     });
 
-    // Button click to start AR and play sound
+    // Button click to start AR, play sound, and show wish
     wishButton.addEventListener('click', () => {
-      const name = inputName.value || 'Друже';
+      console.log('Кнопку "Побажання" натиснуто');
+      const name = inputName.value.trim() || 'Друже';
       const wish = wishes[Math.floor(Math.random() * wishes.length)];
       const message = `${name}, \n${wish}`;
       arText.setAttribute('value', message);
 
+      // Play sound
       sound.currentTime = 0;
-      sound.play().catch(err => console.error('Помилка звуку:', err));
+      sound.play().catch(err => {
+        console.error('Помилка звуку:', err);
+        errorMessage.style.display = 'block';
+        errorMessage.textContent = 'Не вдалося відтворити звук. Перевірте файл magic.mp3.';
+      });
 
+      // Start AR if not already started
       if (!arStarted) {
         scene.components['mindar-image'].system.start();
         arStarted = true;
+        console.log('AR запущено');
       }
 
+      // Trigger text animation and show YouTube button
       arText.emit('showText');
-      youtubeButton.style.display = 'block'; /* Показати кнопку YouTube після натискання */
+      youtubeButton.style.display = 'block';
+      console.log('Текст і кнопка YouTube відображені');
     });
 
-    // Camera check
+    // Check camera access
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       .then(stream => {
         console.log('Задня камера активована');
@@ -212,6 +220,28 @@
         errorMessage.textContent = 'Не вдалося активувати задню камеру. Перевірте дозволи.';
         console.error('Помилка камери:', err);
       });
+
+    // Debug marker detection
+    scene.addEventListener('arReady', () => {
+      console.log('MindAR готовий');
+    });
+    scene.addEventListener('targetFound', () => {
+      console.log('Маркер розпізнано');
+      errorMessage.style.display = 'none';
+    });
+    scene.addEventListener('targetLost', () => {
+      console.log('Маркер втрачено');
+      errorMessage.style.display = 'block';
+      errorMessage.textContent = 'Маркер не розпізнано. Наведіть камеру на картку.';
+    });
+
+    // Check MindAR support
+    if (!AFRAME.components['mindar-image-target']) {
+      errorMessage.style.display = 'block';
+      errorMessage.textContent = 'Ваш пристрій не підтримує AR. Спробуйте інший браузер або пристрій.';
+      console.error('MindAR не підтримується');
+    }
   </script>
 </body>
 </html>
+
