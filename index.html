@@ -1,41 +1,44 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AR-Місяць Магія</title>
     <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: transparent; font-family: Arial, sans-serif; }
-        #welcome { position: absolute; top: 20%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 10; background: transparent; }
-        #welcome h1 { font-size: 2em; color: #FFD700; opacity: 0.9; }
-        #nameInput { padding: 10px; border: 2px solid #00BFFF; border-radius: 5px; margin: 10px 0; background: transparent; color: #FFD700; }
-        #startBtn, #retryBtn, #exitBtn { background: rgba(255, 215, 0, 0.8); color: #00BFFF; border: none; padding: 15px 30px; font-size: 1.2em; border-radius: 5px; cursor: pointer; opacity: 0.9; }
-        #exitBtn { position: absolute; bottom: 20px; left: 20px; display: none; z-index: 10; }
-        #retryBtn { position: absolute; bottom: 20px; right: 20px; display: none; z-index: 10; }
-        #arScene { display: none; }
+        #welcome { position: absolute; top: 10px; left: 10px; text-align: left; background: transparent; z-index: 10; }
+        #welcome h1 { font-size: 1.5em; color: #FFD700; opacity: 0.9; margin: 0; }
+        #nameInput { padding: 5px; border: 2px solid #00BFFF; border-radius: 5px; background: transparent; color: #FFD700; }
+        #magicButton { padding: 5px; background: rgba(255, 215, 0, 0.8); color: #00BFFF; border: none; border-radius: 5px; cursor: pointer; opacity: 0.9; }
+        #tryAgain { position: absolute; bottom: 10px; right: 10px; padding: 5px; background: rgba(255, 215, 0, 0.8); color: #00BFFF; border: none; border-radius: 5px; display: none; cursor: pointer; opacity: 0.9; }
+        #exitBtn { position: absolute; bottom: 10px; left: 10px; padding: 5px; background: rgba(255, 0, 0, 0.8); color: #00BFFF; border: none; border-radius: 5px; display: none; cursor: pointer; opacity: 0.9; }
         #scanText { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); color: #FFD700; font-size: 1.5em; opacity: 0.8; display: none; z-index: 10; }
-        #wishText { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #00BFFF; font-size: 1.8em; text-align: center; background: rgba(255, 255, 255, 0.3); padding: 20px; border-radius: 10px; display: none; z-index: 10; animation: fadeIn 1s; }
+        #wishText { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #00BFFF; font-size: 1.2em; text-align: center; background: rgba(255, 255, 255, 0.3); padding: 10px; border-radius: 5px; display: none; z-index: 10; animation: fadeIn 1s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
     <div id="welcome">
         <h1>Привіт, друже!</h1>
-        <input id="nameInput" type="text" placeholder="Введи своє ім'я">
-        <button id="startBtn">Розпочати магію</button>
+        <input type="text" id="nameInput" placeholder="Введи своє ім'я">
+        <button id="magicButton">Магія</button>
     </div>
     <div id="scanText">Наведи на картку</div>
     <div id="wishText"></div>
     <a-scene id="arScene" embedded arjs="sourceType: webcam; detectionMode: mono; trackingMethod: best; debugUIEnabled: false;">
         <a-marker id="marker" type="pattern" url="marker.patt">
-            <a-box position="0 0.5 0" material="color: #FFD700;" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000"></a-box>
+            <a-entity id="ball" visible="false" geometry="primitive: sphere; radius: 0.3" material="color: #00f; opacity: 0.7" position="0 0.5 0">
+                <a-animation attribute="scale" from="1 1 1" to="1.2 1.2 1.2" dur="1000" direction="alternate" repeat="indefinite"></a-animation>
+                <a-animation attribute="material.color" from="#00f" to="#ff0" dur="1000" direction="alternate" repeat="indefinite"></a-animation>
+                <a-text value="" align="center" position="0 0 0" scale="0.5 0.5 0.5"></a-text>
+            </a-entity>
         </a-marker>
         <a-entity camera></a-entity>
     </a-scene>
     <button id="exitBtn">Вийти</button>
-    <button id="retryBtn">Спробувати ще раз</button>
+    <button id="tryAgain">Спробувати ще раз</button>
 
     <script>
         const welcome = document.getElementById('welcome');
@@ -43,72 +46,82 @@
         const scanText = document.getElementById('scanText');
         const wishText = document.getElementById('wishText');
         const exitBtn = document.getElementById('exitBtn');
-        const retryBtn = document.getElementById('retryBtn');
-        const startBtn = document.getElementById('startBtn');
+        const tryAgain = document.getElementById('tryAgain');
+        const magicButton = document.getElementById('magicButton');
         const nameInput = document.getElementById('nameInput');
         const marker = document.getElementById('marker');
+        const ball = document.getElementById('ball');
 
         let name = '';
         const wishes = [
-            'Бажаю успіхів у навчанні та нових відкриттів!',
-            'Нехай кожен день приносить радість і друзів!',
-            'Здоров\'я, щастя та море посмішок!',
-            'Удачі в усіх починаннях та яскравих пригод!',
-            'Нехай мрії здійснюються легко та швидко!',
-            'Бажаю натхнення та творчих ідей!',
-            'Сили, енергії та перемог у всьому!',
-            'Нових знань та цікавих уроків!',
-            'Щасливих моментів з рідними та друзями!',
-            'Бажаю миру, добра та сонячних днів!',
-            'Успішного року та багато досягнень!',
-            'Нехай все задумане вдається!',
-            'Радості від кожного дня в школі!',
-            'Бажаю креативності та веселощів!',
-            'Сміливості, впевненості та успіху!'
+            "Бажаю тобі багато сміху!",
+            "Нехай твої мрії збуваються!",
+            "Ти найкращий друг!",
+            "Нехай кожен день буде радісним!",
+            "Бажаю тобі здоров’я!",
+            "Ти дуже талановитий!",
+            "Нехай усе вдається!",
+            "Ти світло для всіх навколо!",
+            "Бажаю тобі пригод!",
+            "Ти завжди в моєму серці!",
+            "Нехай сонце завжди світить для тебе!",
+            "Ти маєш велике майбутнє!",
+            "Бажаю тобі щастя щодня!",
+            "Ти найкращий у світі!",
+            "Нехай твоя усмішка ніколи не зникає!"
         ];
 
         function generateWish() {
-            const randomIndex = Math.floor(Math.random() * wishes.length);
-            wishText.innerText = `${name}! ${wishes[randomIndex]}`;
-            wishText.style.display = 'block';
-            retryBtn.style.display = 'block';
+            const randomWish = wishes[Math.floor(Math.random() * wishes.length)];
+            ball.querySelector('a-text').setAttribute('value', `${name}!\n${randomWish}`);
+            ball.setAttribute('visible', true);
+            wishText.style.display = 'none'; // Ховаємо плоский текст, якщо був
         }
 
-        startBtn.addEventListener('click', () => {
+        magicButton.addEventListener('click', () => {
             name = nameInput.value || 'Друже';
             welcome.style.display = 'none';
             arScene.style.display = 'block';
             scanText.style.display = 'block';
             exitBtn.style.display = 'block';
-            // Додатковий тригер для камери
-            arScene.components['arjs'].initWebcam();
+            if (arScene.components['arjs']) {
+                arScene.components['arjs'].initWebcam();
+                console.log('Спроба ініціалізації камери...');
+            }
         });
 
         marker.addEventListener('markerFound', () => {
             generateWish();
             scanText.style.display = 'none';
+            console.log('Маркер знайдено!');
         });
 
         marker.addEventListener('markerLost', () => {
-            wishText.style.display = 'none';
-            retryBtn.style.display = 'none';
+            ball.setAttribute('visible', false);
+            tryAgain.style.display = 'none';
             scanText.style.display = 'block';
+            console.log('Маркер загублено.');
         });
 
-        retryBtn.addEventListener('click', generateWish);
+        tryAgain.addEventListener('click', () => {
+            generateWish();
+        });
 
         exitBtn.addEventListener('click', () => {
             welcome.style.display = 'block';
             arScene.style.display = 'none';
             scanText.style.display = 'none';
-            wishText.style.display = 'none';
+            ball.setAttribute('visible', false);
             exitBtn.style.display = 'none';
-            retryBtn.style.display = 'none';
+            tryAgain.style.display = 'none';
+            nameInput.value = '';
         });
 
         // Дебагування
-        console.log('Сцена ініціалізована:', arScene);
-        arScene.addEventListener('loaded', () => console.log('AR.js завантажено, камера готова?'));
+        arScene.addEventListener('loaded', () => {
+            console.log('Сцена завантажена, камера готова?', arScene.components['arjs'].webcam);
+        });
+        window.addEventListener('error', (e) => console.error('Помилка:', e.message));
     </script>
 </body>
 </html>
