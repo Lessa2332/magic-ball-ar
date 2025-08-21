@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -30,9 +28,8 @@
     </div>
     <div id="scanText">Наведи на картку</div>
     <div id="wishText"></div>
-    <a-scene id="arScene" embedded arjs="sourceType: webcam; detectionMode: mono; trackingMethod: best;">
+    <a-scene id="arScene" embedded arjs="sourceType: webcam; detectionMode: mono; trackingMethod: best; debugUIEnabled: false;">
         <a-marker id="marker" type="pattern" url="marker.patt">
-            <!-- Placeholder для твоєї 3D-моделі: заміни на <a-gltf-model src="твоя_модель.gltf" scale="0.5 0.5 0.5" animation="property: rotation; to: 0 360 0; loop: true; dur: 5000"></a-gltf-model> -->
             <a-box position="0 0.5 0" material="color: #FFD700;" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000"></a-box>
         </a-marker>
         <a-entity camera></a-entity>
@@ -83,17 +80,19 @@
             arScene.style.display = 'block';
             scanText.style.display = 'block';
             exitBtn.style.display = 'block';
+            // Додатковий тригер для камери
+            arScene.components['arjs'].initWebcam();
         });
 
         marker.addEventListener('markerFound', () => {
             generateWish();
-            scanText.style.display = 'none'; // Ховаємо підказку після виявлення
+            scanText.style.display = 'none';
         });
 
         marker.addEventListener('markerLost', () => {
             wishText.style.display = 'none';
             retryBtn.style.display = 'none';
-            scanText.style.display = 'block'; // Показуємо підказку знову
+            scanText.style.display = 'block';
         });
 
         retryBtn.addEventListener('click', generateWish);
@@ -106,6 +105,10 @@
             exitBtn.style.display = 'none';
             retryBtn.style.display = 'none';
         });
+
+        // Дебагування
+        console.log('Сцена ініціалізована:', arScene);
+        arScene.addEventListener('loaded', () => console.log('AR.js завантажено, камера готова?'));
     </script>
 </body>
 </html>
