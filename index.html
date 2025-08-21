@@ -1,190 +1,111 @@
+
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Магічна куля</title>
-  <!-- Надійні CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.0/dist/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/aframe-ar@1.0.0/dist/aframe-ar.min.js"></script>
-  <style>
-    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; background: #000; }
-    #arScene { width: 100%; height: 100vh; }
-    .hidden { display: none; }
-
-    /* Стартовий екран */
-    .overlay {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(255, 255, 255, 0.95);
-      padding: 30px;
-      border-radius: 20px;
-      text-align: center;
-      z-index: 1000;
-      box-shadow: 0 0 20px rgba(0,0,0,0.3);
-      animation: bounce 2s infinite;
-    }
-    .overlay h2 {
-      font-size: 28px;
-      margin-bottom: 20px;
-      color: #0a3d91;
-      text-shadow: 1px 1px 3px #ffd700;
-    }
-    .overlay input {
-      font-size: 22px;
-      padding: 12px;
-      width: 80%;
-      max-width: 280px;
-      border-radius: 10px;
-      border: 2px solid #ff69b4;
-      margin-bottom: 15px;
-    }
-    .btn {
-      margin-top: 10px;
-      padding: 15px 30px;
-      background: linear-gradient(45deg, #ff69b4, #ffd700);
-      color: white;
-      font-size: 22px;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      box-shadow: 0 0 15px rgba(0,0,0,0.4);
-      transition: transform 0.2s;
-    }
-    .btn:hover { transform: scale(1.1); }
-
-    /* Підпис */
-    .footer {
-      position: absolute;
-      bottom: 20px;
-      right: 20px;
-      color: white;
-      font-size: 14px;
-      z-index: 1000;
-      text-shadow: 1px 1px 3px black;
-    }
-
-    /* Анімації */
-    @keyframes bounce {
-      0%, 100% { transform: translate(-50%, -50%) scale(1); }
-      50% { transform: translate(-50%, -52%) scale(1.05); }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR-Місяць Магія</title>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background: transparent; font-family: Arial, sans-serif; }
+        #welcome { position: absolute; top: 20%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 10; background: transparent; }
+        #welcome h1 { font-size: 2em; color: #FFD700; opacity: 0.9; }
+        #nameInput { padding: 10px; border: 2px solid #00BFFF; border-radius: 5px; margin: 10px 0; background: transparent; color: #FFD700; }
+        #startBtn, #retryBtn, #exitBtn { background: rgba(255, 215, 0, 0.8); color: #00BFFF; border: none; padding: 15px 30px; font-size: 1.2em; border-radius: 5px; cursor: pointer; opacity: 0.9; }
+        #exitBtn { position: absolute; bottom: 20px; left: 20px; display: none; z-index: 10; }
+        #retryBtn { position: absolute; bottom: 20px; right: 20px; display: none; z-index: 10; }
+        #arScene { display: none; }
+        #scanText { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); color: #FFD700; font-size: 1.5em; opacity: 0.8; display: none; z-index: 10; }
+        #wishText { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #00BFFF; font-size: 1.8em; text-align: center; background: rgba(255, 255, 255, 0.3); padding: 20px; border-radius: 10px; display: none; z-index: 10; animation: fadeIn 1s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
 </head>
 <body>
-  <div id="arScene" class="hidden">
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-      <a-marker type="image" url="marker.png" preset="targetSize">
-        <a-entity id="magicBall3D" 
-                  geometry="primitive: sphere; radius: 1"
-                  material="color: blue; transparent: true; opacity: 0.3"
-                  scale="0.5 0.5 0.5"
-                  position="0 0 0">
-          <a-text id="wishText"
-                  value=""
-                  color="yellow"
-                  align="center"
-                  width="2"
-                  position="0 0 0.5"
-                  visible="false">
-          </a-text>
-        </a-entity>
-      </a-marker>
+    <div id="welcome">
+        <h1>Привіт, друже!</h1>
+        <input id="nameInput" type="text" placeholder="Введи своє ім'я">
+        <button id="startBtn">Розпочати магію</button>
+    </div>
+    <div id="scanText">Наведи на картку</div>
+    <div id="wishText"></div>
+    <a-scene id="arScene" embedded arjs="sourceType: webcam; detectionMode: mono; trackingMethod: best;">
+        <a-marker id="marker" type="pattern" url="marker.patt">
+            <!-- Placeholder для твоєї 3D-моделі: заміни на <a-gltf-model src="твоя_модель.gltf" scale="0.5 0.5 0.5" animation="property: rotation; to: 0 360 0; loop: true; dur: 5000"></a-gltf-model> -->
+            <a-box position="0 0.5 0" material="color: #FFD700;" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000"></a-box>
+        </a-marker>
+        <a-entity camera></a-entity>
     </a-scene>
-  </div>
+    <button id="exitBtn">Вийти</button>
+    <button id="retryBtn">Спробувати ще раз</button>
 
-  <div id="startScreen" class="overlay">
-    <h2>Введи своє ім'я:</h2>
-    <input type="text" id="nameInput" placeholder="Наприклад: Олена" />
-    <button class="btn">✨ Магія!</button>
-  </div>
+    <script>
+        const welcome = document.getElementById('welcome');
+        const arScene = document.getElementById('arScene');
+        const scanText = document.getElementById('scanText');
+        const wishText = document.getElementById('wishText');
+        const exitBtn = document.getElementById('exitBtn');
+        const retryBtn = document.getElementById('retryBtn');
+        const startBtn = document.getElementById('startBtn');
+        const nameInput = document.getElementById('nameInput');
+        const marker = document.getElementById('marker');
 
-  <div class="footer">@SmartLessa</div>
-  <div id="retryBtn" class="btn hidden" style="position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%);">
-    🔄 Спробувати ще раз
-  </div>
-
-  <script>
-    // Дозволити speechSynthesis при першому кліку
-    document.body.addEventListener('click', function enableSpeech() {
-      if ('speechSynthesis' in window) {
-        const utter = new SpeechSynthesisUtterance(' ');
-        utter.volume = 0;
-        window.speechSynthesis.speak(utter);
-      }
-      document.body.removeEventListener('click', enableSpeech);
-    }, { once: true });
-
-    const audio = new Audio('magic.mp3');
-    const nameInput = document.getElementById('nameInput');
-    const startScreen = document.getElementById('startScreen');
-    const retryBtn = document.getElementById('retryBtn');
-    const wishText = document.getElementById('wishText');
-
-    function speak(text) {
-      if ('speechSynthesis' in window) {
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = 'uk-UA';
-        utter.rate = 1;
-        window.speechSynthesis.speak(utter);
-      }
-    }
-
-    // Використовуємо addEventListener замість onclick
-    document.querySelector('.btn').addEventListener('click', startMagic);
-
-    function startMagic() {
-      const name = nameInput.value.trim();
-      if (!name) {
-        alert("Будь ласка, введи ім'я!");
-        return;
-      }
-
-      startScreen.classList.add('hidden');
-      document.getElementById('arScene').classList.remove('hidden');
-      audio.play();
-
-      setTimeout(() => {
+        let name = '';
         const wishes = [
-          "Ти будеш найкращим учнем!",
-          "Ти знайдеш сховану скарбницю!",
-          "Ти зможеш говорити з тваринами!",
-          "Ти станеш майстром рисунку!",
-          "Ти зробиш світ кращим!",
-          "Ти отримаєш магічну книжку!",
-          "Ти полетиш у космос!",
-          "Ти зможеш знати всі відповіді!",
-          "Ти зустрінеш дракона!",
-          "Ти станеш героєм!",
-          "Ти зможеш перетворитись на ведмедя!",
-          "Ти знайдеш магічну зірку!",
-          "Ти будеш завжди веселим!",
-          "Ти отримаєш магічну ракету!",
-          "Ти зможеш літати!"
+            'Бажаю успіхів у навчанні та нових відкриттів!',
+            'Нехай кожен день приносить радість і друзів!',
+            'Здоров\'я, щастя та море посмішок!',
+            'Удачі в усіх починаннях та яскравих пригод!',
+            'Нехай мрії здійснюються легко та швидко!',
+            'Бажаю натхнення та творчих ідей!',
+            'Сили, енергії та перемог у всьому!',
+            'Нових знань та цікавих уроків!',
+            'Щасливих моментів з рідними та друзями!',
+            'Бажаю миру, добра та сонячних днів!',
+            'Успішного року та багато досягнень!',
+            'Нехай все задумане вдається!',
+            'Радості від кожного дня в школі!',
+            'Бажаю креативності та веселощів!',
+            'Сміливості, впевненості та успіху!'
         ];
 
-        const randomWish = wishes[Math.floor(Math.random() * wishes.length)];
-        const fullText = name + ", " + randomWish;
-        wishText.setAttribute('value', fullText);
-        wishText.setAttribute('visible', 'true');
-        retryBtn.classList.remove('hidden');
+        function generateWish() {
+            const randomIndex = Math.floor(Math.random() * wishes.length);
+            wishText.innerText = `${name}! ${wishes[randomIndex]}`;
+            wishText.style.display = 'block';
+            retryBtn.style.display = 'block';
+        }
 
-        speak(randomWish);
+        startBtn.addEventListener('click', () => {
+            name = nameInput.value || 'Друже';
+            welcome.style.display = 'none';
+            arScene.style.display = 'block';
+            scanText.style.display = 'block';
+            exitBtn.style.display = 'block';
+        });
 
-        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-      }, 1500);
-    }
+        marker.addEventListener('markerFound', () => {
+            generateWish();
+            scanText.style.display = 'none'; // Ховаємо підказку після виявлення
+        });
 
-    retryBtn.addEventListener('click', () => {
-      wishText.setAttribute('visible', 'false');
-      retryBtn.classList.add('hidden');
-      document.getElementById('arScene').classList.add('hidden');
-      startScreen.classList.remove('hidden');
-      nameInput.value = '';
-      audio.currentTime = 0;
-    });
-  </script>
+        marker.addEventListener('markerLost', () => {
+            wishText.style.display = 'none';
+            retryBtn.style.display = 'none';
+            scanText.style.display = 'block'; // Показуємо підказку знову
+        });
+
+        retryBtn.addEventListener('click', generateWish);
+
+        exitBtn.addEventListener('click', () => {
+            welcome.style.display = 'block';
+            arScene.style.display = 'none';
+            scanText.style.display = 'none';
+            wishText.style.display = 'none';
+            exitBtn.style.display = 'none';
+            retryBtn.style.display = 'none';
+        });
+    </script>
 </body>
 </html>
