@@ -1,27 +1,156 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AR Камера</title>
-    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <style>
-        body { margin: 0; overflow: hidden; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Магічна Куля + Караоке</title>
+  <script src="https://cdn.jsdelivr.net/npm/mindar-image-three@1.0.0/dist/mindar-image-three.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+  <style>
+    body, html { margin:0; padding:0; overflow:hidden; background:#000; font-family: 'Comic Sans MS', cursive; color:#0ff; }
+    #ui { position:absolute; top:20px; left:20px; z-index:10; background:rgba(0,0,0,0.5); padding:15px; border-radius:15px; border:2px solid #0ff; }
+    .note { font-size:24px; margin:0 5px; opacity:0.5; }
+    .note.active { opacity:1; text-shadow:0 0 10px #0ff; }
+    #score { font-weight:bold; color:#0f0; }
+    #prophecy { position:absolute; bottom:50px; left:50%; transform:translateX(-50%); background:#000; padding:20px; border:3px solid #0ff; border-radius:20px; font-size:20px; text-align:center; display:none; animation:fade 4s forwards; }
+    @keyframes fade { 0%{opacity:1} 80%{opacity:1} 100%{opacity:0} }
+    button { background:#000; color:#0ff; border:2px solid #0ff; padding:10px; margin-top:10px; border-radius:10px; font-size:16px; }
+  </style>
 </head>
 <body>
-    <a-scene embedded arjs="sourceType: webcam; detectionMode: mono; trackingMethod: best;">
-        <a-entity camera></a-entity>
-    </a-scene>
 
-    <script>
-        const arScene = document.querySelector('a-scene');
-        arScene.addEventListener('loaded', () => {
-            if (arScene.components['arjs']) {
-                arScene.components['arjs'].initWebcam();
-            }
-        });
-    </script>
+<div id="ui">
+  <div>Співай: <span class="note">C</span><span class="note">C</span><span class="note">C</span><span class="note">D</span><span class="note">E</span><span class="note">E</span><span class="note">D</span><span class="note">C</span></div>
+  <div>Рахунок: <span id="score">0</span>%</div>
+  <button id="hint">Підказка</button>
+</div>
+
+<div id="prophecy"></div>
+
+<script>
+  // === MindAR Setup ===
+  const mindarThree = new window.MINDAR.ImageThree({
+    container: document.body,
+    imageTargetSrc: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', // placeholder — заміни на свій .mind
+    uiLoading: "no",
+    uiScanning: "no"
+  });
+  const { renderer, scene, camera } = mindarThree;
+  const anchor = mindarThree.addAnchor(0);
+
+  // === Магічна Куля (procedural) ===
+  const orbGroup = new THREE.Group();
+  const sphere = new THREE.Mesh(
+    new THREE.SphereGeometry(0.5, 64, 64),
+    new THREE.ShaderMaterial({
+      uniforms: { time: { value: 0 }, pulse: { value: 1 } },
+      vertexShader: `varying vec3 vPos; void main(){ vPos=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+      fragmentShader: `
+        uniform float time; uniform float pulse;
+        varying vec3 vPos;
+        void main(){
+          float wave = sin(time*3.0 + vPos.y*10.0)*0.5+0.5;
+          vec3 color = mix(vec3(0.1,0.0,0.3), vec3(0.0,1.0,1.0), wave*pulse);
+          gl_FragColor = vec4(color, 0.9);
+        }
+      `,
+      transparent: true
+    })
+  );
+  orbGroup.add(sphere);
+
+  const light = new THREE.PointLight(0x00ffff, 2, 2);
+  orbGroup.add(light);
+
+  // === Частинки ===
+  const particles = new THREE.Points(
+    new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(new Float32Array(900), 3)),
+    new THREE.PointsMaterial({ color: 0x88ffff, size: 0.05, transparent: true, opacity: 0.6 })
+  );
+  orbGroup.add(particles);
+
+  anchor.group.add(orbGroup);
+
+  // === Анімація ===
+  const clock = new THREE.Clock();
+  const pos = particles.geometry.attributes.position.array;
+  for (let i = 0; i < 300; i++) {
+    pos[i*3] = (Math.random()-0.5)*1.2;
+    pos[i*3+1] = (Math.random()-0.5)*1.2;
+    pos[i*3+2] = (Math.random()-0.5)*1.2;
+  }
+
+  // === Pitch Detection ===
+  let score = 0, noteIndex = 0;
+  const JINGLE = [60,60,60,62,64,64,62,60];
+  const A4 = 440, SEMITONE = Math.pow(2,1/12);
+  const midiToFreq = n => A4 * Math.pow(SEMITONE, n-69);
+  let expected = midiToFreq(JINGLE[0]);
+
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    const ctx = new AudioContext();
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 2048;
+ dựng = ctx.createMediaStreamSource(stream);
+    source.connect(analyser);
+
+    const buffer = new Float32Array(analyser.fftSize);
+    const loop = () => {
+      analyser.getFloatTimeDomainData(buffer);
+      const pitch = autoCorrelate(buffer, ctx.sampleRate);
+      if (pitch > 0 && Math.abs(pitch - expected) < 30) {
+        score = Math.min(score + 5, 100);
+        sphere.material.uniforms.pulse.value = 1.5;
+        if (score % 25 === 0) {
+          noteIndex = (noteIndex + 1) % 8;
+          expected = midiToFreq(JINGLE[noteIndex]);
+          document.querySelectorAll('.note')[noteIndex].classList.add('active');
+          setTimeout(() => document.querySelectorAll('.note').forEach(n=>n.classList.remove('active')), 500);
+        }
+      } else if (pitch > 0) {
+        score = Math.max(score - 1, 0);
+        sphere.material.uniforms.pulse.value = 0.8;
+      }
+      document.getElementById('score').textContent = score;
+      requestAnimationFrame(loop);
+    };
+    loop();
+  });
+
+  function autoCorrelate(buf, sampleRate) {
+    let rms = 0;
+    for (let i=0;i<buf.length;i++) rms += buf[i]*buf[i];
+    rms = Math.sqrt(rms/buf.length);
+    if (rms<0.01) return -1;
+
+    let best = 0, bestLag = -1;
+    for (let lag=50; lag<buf.length/2; lag++) {
+      let corr = 0;
+      for (let i=0;i<buf.length-lag;i++) corr += buf[i]*buf[i+lag];
+      if (corr > best) { best = corr; bestLag = lag; }
+    }
+    return bestLag > 0 ? sampleRate / bestLag : -1;
+  }
+
+  // === Пророцтва ===
+  const prophecies = ["Ти знайдеш скарб!", "Твоя мрія здійсниться!", "Ти — супергерой!", "Ти отримаєш 5!", "Різдво буде чарівним!"];
+  document.addEventListener('click', () => {
+    const div = document.getElementById('prophecy');
+    div.textContent = prophecies[Math.floor(Math.random()*prophecies.length)];
+    div.style.display = 'block';
+    setTimeout(() => div.style.display = 'none', 4000);
+  });
+
+  // === Запуск ===
+  (async () => {
+    await mindarThree.start();
+    renderer.setAnimationLoop(() => {
+      const t = clock.getElapsedTime();
+      sphere.material.uniforms.time.value = t;
+      renderer.render(scene, camera);
+    });
+  })();
+</script>
+
 </body>
 </html>
