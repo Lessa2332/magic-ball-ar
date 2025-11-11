@@ -1,287 +1,186 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magic Ball AR - Пророцтво</title>
-    <script src="https://cdn.jsdelivr.net/npm/mindar-image-three@1.0.0/dist/mindar-image-three.prod.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
-    <style>
-        /* Адаптований style.css для твого репо */
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background: #000;
-            font-family: 'Arial', sans-serif;
-            color: #fff;
-        }
-        .prophecy {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 255, 255, 0.9);
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            z-index: 100;
-            font-size: 18px;
-            max-width: 80%;
-            animation: fadeInOut 4s ease-in-out;
-        }
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-            20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-        }
-        .instructions {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.7);
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            z-index: 50;
-        }
-        #ar-root {
-            width: 100vw;
-            height: 100vh;
-        }
-        /* Додано для магічного звуку */
-        audio { display: none; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="description" content="Магічна куля пророцтв у AR для дітей" />
+  <title>🔮 Магічна куля — Пророцтво!</title>
+
+  <!-- A-Frame + MindAR -->
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+  <script src="https://unpkg.com/aframe-particle-system-component@1.0.10/dist/aframe-particle-system-component.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #000;
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      color: white;
+    }
+    .loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 20, 30, 0.95);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      text-align: center;
+      color: #00ffff;
+      font-size: 1.4em;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .loader h1 {
+      font-size: 2.2em;
+      margin: 0 0 15px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .prophecy {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 255, 255, 0.92);
+      padding: 20px;
+      border-radius: 18px;
+      text-align: center;
+      z-index: 200;
+      font-size: 18px;
+      max-width: 85%;
+      animation: fadeInOut 4s ease-in-out;
+    }
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+      20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+    }
+    audio { display: none; }
+  </style>
 </head>
 <body>
-    <div class="instructions">
-        <p>Відскануй маркер (marker.png) за допомогою камери. Доторкнись до магічної кулі для пророцтва! (Використовує targets.mind з твого репо)</p>
-    </div>
-    <div id="ar-root"></div>
-    <audio id="magic-sound" src="magic.mp3" preload="auto"></audio> <!-- Інтеграція з твоїм magic.mp3 -->
+  <div class="loader" id="loader">
+    <h1>🔮 Магічна куля</h1>
+    <p>Наведи камеру на маркер!<br>Потім торкнись кулі 👆</p>
+  </div>
 
-    <script>
-        // Адаптований magic-orb.ts (як JS для твого репо)
-        function createMagicOrb(scene) {
-            const group = new THREE.Group();
+  <a-scene
+    mindar-image="imageTargetSrc: ./targets.mind;"
+    embedded
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+    loading-screen="enabled: false"
+    renderer="colorManagement: true; physicallyCorrectLights: true;"
+  >
+    <a-assets>
+      <audio id="magic-sound" src="magic.mp3" preload="auto"></audio>
+    </a-assets>
 
-            // 1. Сфера (геометрія)
-            const sphereGeo = new THREE.SphereGeometry(0.5, 64, 64);
-            
-            // 2. Шейдер: магічний градієнт + пульсація
-            const orbMaterial = new THREE.ShaderMaterial({
-                uniforms: {
-                    time: { value: 0 },
-                    glowColor: { value: new THREE.Color(0x00ffff) },
-                    pulse: { value: 1.0 }
-                },
-                vertexShader: `
-                    varying vec3 vNormal;
-                    varying vec3 vPosition;
-                    void main() {
-                        vNormal = normalize(normalMatrix * normal);
-                        vPosition = position;
-                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                    }
-                `,
-                fragmentShader: `
-                    uniform float time;
-                    uniform vec3 glowColor;
-                    uniform float pulse;
-                    varying vec3 vNormal;
-                    varying vec3 vPosition;
-                    
-                    void main() {
-                        float fresnel = pow(1.0 - dot(vNormal, vec3(0,0,1)), 2.0);
-                        float wave = sin(time * 3.0 + vPosition.y * 10.0) * 0.5 + 0.5;
-                        vec3 color = mix(vec3(0.1, 0.0, 0.3), glowColor, wave * fresnel * pulse);
-                        gl_FragColor = vec4(color, 0.9);
-                    }
-                `,
-                transparent: true,
-                side: THREE.DoubleSide
-            });
+    <a-camera position="0 0 1.5" look-controls="enabled: false">
+      <a-cursor
+        fuse="true"
+        fuse-timeout="800"
+        raycaster="objects: .magic-orb-mesh"
+        animation__click="property: scale; startEvents: click; from: 1 1 1; to: 1.2 1.2 1.2; dur: 200; easing: easeOutQuad"
+        animation__reset="property: scale; startEvents: animationcomplete__click; to: 1 1 1; dur: 300; easing: easeInOutQuad"
+      ></a-cursor>
+    </a-camera>
 
-            const orb = new THREE.Mesh(sphereGeo, orbMaterial);
-            group.add(orb);
+    <a-entity mindar-image-target="targetIndex: 0">
+      <a-entity id="magic-orb" position="0 0 -0.3" scale="0.6 0.6 0.6" visible="false">
+        <!-- Магічна куля -->
+        <a-sphere
+          class="magic-orb-mesh"
+          radius="0.5"
+          material="color: #00ffff; shader: flat; transparent: true; opacity: 0.85"
+          animation__pulse="property: scale; dir: alternate; dur: 1800; from: 1 1 1; to: 1.08 1.08 1.08; loop: true; easing: easeInOutSine"
+        ></a-sphere>
 
-            // 3. Внутрішнє світло
-            const innerLight = new THREE.PointLight(0x00ffff, 2, 2);
-            innerLight.position.set(0, 0, 0);
-            group.add(innerLight);
+        <!-- Внутрішнє світло -->
+        <a-light type="point" color="#00ffff" intensity="1.8" distance="3" decay="1"></a-light>
 
-            // 4. Частинки (магічний дим)
-            const particlesGeo = new THREE.BufferGeometry();
-            const count = 300;
-            const positions = new Float32Array(count * 3);
-            const velocities = new Float32Array(count * 3);
+        <!-- Частинки (магічна пилка) -->
+        <a-entity
+          particle-system="
+            preset: snow;
+            particleCount: 200;
+            color: #88ffff;
+            size: 0.04;
+            maxAge: 4;
+            velocitySpread: 0.3;
+            positionSpread: 0.6 0.6 0.6;
+            accelerationSpread: 0.1;
+            opacity: 0.7;
+          "
+        ></a-entity>
+      </a-entity>
+    </a-entity>
+  </a-scene>
 
-            for (let i = 0; i < count * 3; i += 3) {
-                positions[i] = (Math.random() - 0.5) * 1.2;
-                positions[i+1] = (Math.random() - 0.5) * 1.2;
-                positions[i+2] = (Math.random() - 0.5) * 1.2;
+  <script>
+    const prophecies = [
+      "Ти знайдеш скарб під ялинкою!",
+      "Твоя мрія здійсниться до Різдва!",
+      "Сьогодні ти отримаєш 5 у школі!",
+      "Ти — майбутній президент України!",
+      "Твій улюблений герой прийде в гості!"
+    ];
 
-                velocities[i] = (Math.random() - 0.5) * 0.02;
-                velocities[i+1] = (Math.random() - 0.5) * 0.02;
-                velocities[i+2] = (Math.random() - 0.5) * 0.02;
-            }
+    function showProphecy() {
+      const sound = document.getElementById('magic-sound');
+      if (sound) {
+        sound.currentTime = 0;
+        sound.play().catch(e => console.warn('Звук заблоковано:', e));
+      }
 
-            particlesGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            particlesGeo.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+      const text = prophecies[Math.floor(Math.random() * prophecies.length)];
+      const div = document.createElement('div');
+      div.innerHTML = `<h2>Пророцтво:</h2><p>${text}</p>`;
+      div.className = 'prophecy';
+      document.body.appendChild(div);
+      setTimeout(() => {
+        if (div.parentNode) div.remove();
+      }, 4000);
+    }
 
-            const particlesMat = new THREE.PointsMaterial({
-                color: 0x88ffff,
-                size: 0.05,
-                transparent: true,
-                opacity: 0.6,
-                blending: THREE.AdditiveBlending
-            });
+    // Обробка подій маркера
+    const loader = document.getElementById('loader');
+    const orb = document.getElementById('magic-orb');
 
-            const particles = new THREE.Points(particlesGeo, particlesMat);
-            group.add(particles);
+    document.querySelector('[mindar-image-target]').addEventListener('targetFound', () => {
+      console.log('✨ Маркер знайдено! Магічна куля активна.');
+      loader.style.display = 'none';
+      orb.setAttribute('visible', 'true');
+    });
 
-            // 5. Анімація
-            const clock = new THREE.Clock();
-            function animate() {
-                const t = clock.getElapsedTime();
-                orbMaterial.uniforms.time.value = t;
-                orbMaterial.uniforms.pulse.value = 0.8 + Math.sin(t * 2) * 0.2;
+    document.querySelector('[mindar-image-target]').addEventListener('targetLost', () => {
+      console.log('⚠️ Маркер втрачено.');
+      loader.style.display = 'flex';
+      orb.setAttribute('visible', 'false');
+    });
 
-                const pos = particlesGeo.attributes.position.array;
-                const vel = particlesGeo.attributes.velocity.array;
-
-                for (let i = 0; i < count * 3; i += 3) {
-                    pos[i] += vel[i];
-                    pos[i+1] += vel[i+1];
-                    pos[i+2] += vel[i+2];
-
-                    if (Math.abs(pos[i]) > 0.7) vel[i] *= -1;
-                    if (Math.abs(pos[i+1]) > 0.7) vel[i+1] *= -1;
-                    if (Math.abs(pos[i+2]) > 0.7) vel[i+2] *= -1;
-                }
-                particlesGeo.attributes.position.needsUpdate = true;
-
-                requestAnimationFrame(animate);
-            }
-            animate();
-
-            scene.add(group);
-            return group;
+    // Клік по кулі
+    document.addEventListener('click', (evt) => {
+      if (evt.target.classList.contains('a-cursor__ring') || evt.target.tagName === 'CANVAS') {
+        const orbMesh = document.querySelector('.magic-orb-mesh');
+        if (orbMesh && orb.getAttribute('visible') === 'true') {
+          showProphecy();
         }
-
-        // === Пророцтва ===
-        const prophecies = [
-            "Ти знайдеш скарб під ялинкою!",
-            "Твоя мрія здійсниться до Різдва!",
-            "Сьогодні ти отримаєш 5 у школі!",
-            "Ти — майбутній президент України!",
-            "Твій улюблений герой прийде в гості!"
-        ];
-
-        function showProphecy() {
-            // Відтвори звук з magic.mp3
-            const sound = document.getElementById('magic-sound');
-            sound.currentTime = 0;
-            sound.play().catch(e => console.log('Звук не відтворився:', e));
-
-            const text = prophecies[Math.floor(Math.random() * prophecies.length)];
-            const div = document.createElement('div');
-            div.innerHTML = `<h2>Пророцтво:</h2><p>${text}</p>`;
-            div.className = 'prophecy';
-            document.body.appendChild(div);
-            setTimeout(() => div.remove(), 4000);
-        }
-
-        // === MindAR Setup (адаптовано під твій targets.mind та marker.png) ===
-        const startButton = document.createElement('button');
-        startButton.textContent = 'Запустити AR';
-        startButton.style.position = 'fixed';
-        startButton.style.top = '50%';
-        startButton.style.left = '50%';
-        startButton.style.transform = 'translate(-50%, -50%)';
-        startButton.style.zIndex = '1000';
-        startButton.style.padding = '10px 20px';
-        startButton.style.background = '#00ffff';
-        startButton.style.border = 'none';
-        startButton.style.borderRadius = '5px';
-        startButton.style.cursor = 'pointer';
-        document.body.appendChild(startButton);
-
-        startButton.addEventListener('click', async () => {
-            startButton.remove();
-
-            // Використовуємо твій targets.mind (скомпільований з marker.png)
-            const mindarThree = new window.MINDAR.ImageThree({
-                container: document.getElementById('ar-root'),
-                imageTargetSrc: './targets.mind', // Твій файл з репо
-                maxTrack: 1,
-                uiLoading: "no",
-                uiScanning: "no",
-                filterMinCF: 0.0001,
-                filterBeta: 0.01
-            });
-
-            const { renderer, scene, camera } = mindarThree;
-            const anchor = mindarThree.addAnchor(0);
-
-            // Створити магічну кулю
-            const orb = createMagicOrb(scene);
-            anchor.group.add(orb);
-
-            // Ітеракція: дотик
-            const raycaster = new THREE.Raycaster();
-            const mouse = new THREE.Vector2();
-
-            function onClick(event) {
-                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-                mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
-
-                raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObject(orb, true);
-
-                if (intersects.length > 0) {
-                    showProphecy();
-                }
-            }
-            window.addEventListener('click', onClick);
-
-            await mindarThree.start();
-            renderer.setAnimationLoop(() => {
-                renderer.render(scene, camera);
-            });
-        });
-
-        // PWA Manifest (для офлайн)
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js'); // Додай service worker, якщо потрібно
-        }
-    </script>
-
-    <!-- Вбудований README (оновлений для твого репо) -->
-    <!--
-    # Magic Ball AR
-
-    ## Опис
-    AR-додаток з магічною кулею пророцтв на MindAR + Three.js. Доторкнись — отримай пророцтво з звуком!
-
-    ## Файли в репо:
-    - index.html: Головний файл (адаптовано під твоє репо)
-    - magic.mp3: Звук пророцтва
-    - marker.png: Зображення для компіляції targets.mind
-    - targets.mind: Скомпілюй з marker.png: npm install -g @mindar/image-compiler; mindar-image-compiler -i marker.png -o targets.mind
-    - README: Цей файл
-
-    ## Деплой на GitHub Pages
-    1. Push зміни в main.
-    2. Settings → Pages → Branch: main → Save.
-    3. Посилання: https://твій-нік.github.io/magic-ball-ar
-
-    ## PDF для друку (A5)
-    Використовуй marker.png як image target. Додай QR на друковану сторінку: https://твій-нік.github.io/magic-ball-ar
-
-    Розмір: <500 KB. Працює на Chrome/Safari.
-    -->
-
+      }
+    });
+  </script>
 </body>
 </html>
+
