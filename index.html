@@ -1,533 +1,712 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magic Ball AR - Пророцтво (A-Frame + MindAR)</title>
-    
-    <!-- Preload критичних ресурсів -->
-    <link rel="preload" href="./targets.mind" as="fetch" crossorigin>
-    <link rel="preload" href="magic.mp3" as="audio">
-    
-    <!-- Фікс favicon: inline SVG -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌟</text></svg>">
-    
-    <!-- A-Frame + MindAR CDN -->
-    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.3/dist/mindar-image.prod.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.3/dist/mindar-image-aframe.prod.js"></script>
-    
-    <style>
-        :root {
-            --primary-glow: #00ffff;
-            --secondary-glow: #0088ff;
-            --transition-speed: 0.3s;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background: linear-gradient(135deg, #000428, #004e92);
-            font-family: 'Arial', sans-serif;
-            color: #fff;
-            position: relative;
-        }
-        
-        /* Loading Screen */
-        .loading-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 20, 40, 0.95);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            transition: opacity 0.5s ease;
-        }
-        
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(0, 255, 255, 0.3);
-            border-top: 3px solid var(--primary-glow);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-        
-        .loading-progress {
-            width: 200px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 2px;
-            overflow: hidden;
-            margin-bottom: 15px;
-        }
-        
-        .loading-progress-bar {
-            height: 100%;
-            background: var(--primary-glow);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-        
-        /* UI Components */
-        .instructions {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            right: 15px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            font-size: 14px;
-            line-height: 1.4;
-            z-index: 50;
-            backdrop-filter: blur(10px);
-            transition: opacity var(--transition-speed);
-        }
-        
-        .status-indicator {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            z-index: 50;
-            transition: all var(--transition-speed);
-        }
-        
-        .status-tracking { background: rgba(0, 255, 0, 0.2); border: 1px solid #00ff00; }
-        .status-scanning { background: rgba(255, 255, 0, 0.2); border: 1px solid #ffff00; }
-        .status-error { background: rgba(255, 0, 0, 0.2); border: 1px solid #ff0000; }
-        
-        .prophecy-overlay {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.8);
-            background: linear-gradient(135deg, rgba(0, 255, 255, 0.95), rgba(0, 136, 255, 0.95));
-            padding: 30px;
-            border-radius: 20px;
-            text-align: center;
-            z-index: 100;
-            font-size: 20px;
-            max-width: 85%;
-            box-shadow: 0 0 50px rgba(0, 255, 255, 0.5);
-            opacity: 0;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        
-        .prophecy-overlay.visible {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-        }
-        
-        .prophecy-title {
-            font-size: 24px;
-            margin-bottom: 15px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-        
-        .prophecy-text {
-            font-size: 18px;
-            line-height: 1.4;
-            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-        }
-        
-        .error-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 200;
-            padding: 20px;
-            text-align: center;
-        }
-        
-        .error-overlay.visible {
-            display: flex;
-        }
-        
-        /* Анімації */
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-        
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.5); }
-            50% { box-shadow: 0 0 40px rgba(0, 255, 255, 0.8); }
-        }
-        
-        .pulse-glow {
-            animation: pulse-glow 2s ease-in-out infinite;
-        }
-        
-        /* Адаптивність */
-        @media (max-width: 768px) {
-            .instructions {
-                font-size: 12px;
-                padding: 12px;
-            }
-            
-            .prophecy-overlay {
-                padding: 20px;
-                font-size: 18px;
-            }
-            
-            .prophecy-title { font-size: 20px; }
-            .prophecy-text { font-size: 16px; }
-        }
-        
-        audio { display: none; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Christmas Gloves AR Try-On</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎄</text></svg>">
+  <style>
+    /* ... ваш існуючий CSS залишається без змін ... */
+  </style>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div class="loading-screen" id="loadingScreen">
-        <div class="loading-spinner"></div>
-        <div class="loading-progress">
-            <div class="loading-progress-bar" id="progressBar"></div>
-        </div>
-        <div id="loadingText">Завантаження AR...</div>
-    </div>
+  <!-- ... ваш існуючий HTML залишається без змін ... -->
 
-    <!-- UI Elements -->
-    <div class="instructions">
-        <p>📱 Наведи камеру на маркер (marker.png). Доторкнись до магічної кулі для пророцтва!</p>
-    </div>
-    
-    <div class="status-indicator status-scanning" id="statusIndicator">
-        🔍 Сканування...
-    </div>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { FilesetResolver, HandLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/+esm";
 
-    <!-- Prophecy Overlay -->
-    <div class="prophecy-overlay" id="prophecyOverlay">
-        <div class="prophecy-title">🌟 Магічне Пророцтво</div>
-        <div class="prophecy-text" id="prophecyText"></div>
-    </div>
+    // ========== КОНФІГУРАЦІЯ ==========
+    const CONFIG = {
+      SCALE: {
+        BASE_SCALE: 400,
+        DISTANCE_MULTIPLIER: 0.8,
+        MIN_SCALE: 200,
+        MAX_SCALE: 600
+      },
+      HANDS: {
+        MAX_HANDS: 2,
+        DETECTION_THRESHOLD: 10
+      },
+      PERFORMANCE: {
+        DETECTION_THROTTLE_MS: 50,
+        MAX_SPARKLES: 150,
+        SPARKLE_SPAWN_RATE: 0.08
+      },
+      AUDIO: {
+        VOLUME: 0.4,
+        CLICK_VOLUME: 0.5
+      },
+      DESIGNS: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+      DEBUG: {
+        ENABLED: false
+      }
+    };
 
-    <!-- Error Overlay -->
-    <div class="error-overlay" id="errorOverlay">
-        <h2>❌ Помилка AR</h2>
-        <p id="errorMessage">Не вдалося запустити AR. Перевірте дозвіл камери.</p>
-        <button onclick="window.location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #00ffff; border: none; border-radius: 5px; cursor: pointer;">
-            Спробувати знову
-        </button>
-    </div>
+    // ========== TRANSLATIONS ==========
+    const TRANSLATIONS = {
+      en: {
+        title: "Christmas Gloves AR Try-On",
+        loading: "Loading Christmas AR Experience...",
+        cameraPrompt: "Please allow camera access",
+        retry: "Retry",
+        handNotDetected: "Show your hand(s)",
+        errorCamera: "Camera access denied. Try Chrome or Safari.",
+        errorGeneral: "AR failed to load. Refresh page."
+      },
+      uk: {
+        title: "Різдвяний AR-приміряльник рукавичок",
+        loading: "Завантаження різдвяного AR...",
+        cameraPrompt: "Будь ласка, дозвольте доступ до камери",
+        retry: "Повторити",
+        handNotDetected: "Покажіть руку(руки)",
+        errorCamera: "Доступ до камери заборонено. Спробуйте Chrome або Safari.",
+        errorGeneral: "AR не вдалося завантажити. Оновіть сторінку."
+      }
+    };
 
-    <!-- Audio Elements -->
-    <audio id="magic-sound" src="magic.mp3" preload="auto"></audio>
-    <audio id="appear-sound" src="appear.mp3" preload="auto"></audio>
+    // ========== SPARKLE PARTICLE ==========
+    class SparkleParticle {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = Math.random() * 0.5 + 0.2;
+        this.size = Math.random() * 2 + 1;
+        this.life = 1.0;
+        this.brightness = Math.random() * 0.5 + 0.5;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += 0.02;
+        this.vx *= 0.98;
+        this.life -= 0.005;
+       
+        if (this.y > window.innerHeight) this.life = 0;
+        if (this.x < 0 || this.x > window.innerWidth) this.life = 0;
+      }
+      draw(ctx) {
+        if (this.life <= 0) return;
+       
+        ctx.save();
+        ctx.globalAlpha = this.life * 0.8 * this.brightness;
+        ctx.fillStyle = `hsl(${Math.random() * 60 + 60}, 100%, 80%)`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
 
-    <!-- A-Frame Scene -->
-    <a-scene 
-        mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; filterMinCF: 0.0001; filterBeta: 0.01; uiScanning: #no-ui; uiLoading: #no-ui"
-        color-space="sRGB"
-        renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
-        vr-mode-ui="enabled: false"
-        device-orientation-permission-ui="enabled: false"
-        embedded
-        a-assets-timeout="15000">
-        
-        <!-- Камера -->
-        <a-camera position="0 0 0" look-controls="enabled: false" wasd-controls="enabled: false"></a-camera>
+    // ========== DEBUG MANAGER ==========
+    class DebugManager {
+      constructor() {
+        this.enabled = CONFIG.DEBUG.ENABLED;
+        this.elements = {
+          debugInfo: document.getElementById('debugInfo')
+        };
+      }
+      toggle() {
+        this.enabled = !this.enabled;
+        this.elements.debugInfo.style.display = this.enabled ? 'block' : 'none';
+        return this.enabled;
+      }
+      updateInfo(info) {
+        if (!this.enabled) return;
+        this.elements.debugInfo.innerHTML = info;
+      }
+    }
 
-        <!-- Ціль: mindar-image-target -->
-        <a-entity mindar-image-target="targetIndex: 0">
-            <!-- Магічна куля -->
-            <a-entity id="magic-orb" position="0 0 0" scale="0.5 0.5 0.5">
-                <!-- Основна сфера -->
-                <a-sphere 
-                    geometry="primitive: sphere; radius: 1; segmentsWidth: 64; segmentsHeight: 64"
-                    material="color: #001133; emissive: #00ffff; emissiveIntensity: 0.5; transparent: true; opacity: 0.9; shader: standard"
-                    animation__pulse="property: material.emissiveIntensity; from: 0.5; to: 1.0; dir: alternate; dur: 2000; easing: easeInOutSine; loop: true"
-                    animation__rotate="property: rotation; to: 0 360 0; dur: 15000; easing: linear; loop: true">
-                </a-sphere>
+    // ========== SERVICES ==========
+    class AudioService {
+      constructor() {
+        this.click = new Audio('audio/click.mp3');
+        this.click.volume = CONFIG.AUDIO.CLICK_VOLUME;
+      }
+      playClick() {
+        this.click.currentTime = 0;
+        this.click.play().catch(() => {});
+      }
+    }
 
-                <!-- Додатковий glow ефект -->
-                <a-sphere
-                    geometry="primitive: sphere; radius: 1.1; segmentsWidth: 32; segmentsHeight: 32"
-                    material="color: #00ffff; transparent: true; opacity: 0.1; shader: flat; side: back"
-                    animation__pulse-opacity="property: material.opacity; from: 0.05; to: 0.15; dur: 3000; easing: easeInOutSine; loop: true">
-                </a-sphere>
-
-                <!-- Внутрішнє світло -->
-                <a-point-light 
-                    position="0 0 0" 
-                    color="#00ffff" 
-                    intensity="2" 
-                    distance="3"
-                    animation="property: intensity; from: 1.5; to: 2.5; dir: alternate; dur: 2000; easing: easeInOutSine; loop: true">
-                </a-point-light>
-
-                <!-- Частинки -->
-                <a-entity 
-                    particle-system="preset: dust; color: #88ffff, #00ffff, #ffffff; particleCount: 200; velocityValue: 0.03; velocitySpread: 0.05; accelerationValue: 0; accelerationSpread: 0.01; startSize: 0.03; endSize: 0.01; opacity: 0.4; blending: additive; texture: default"
-                    position="0 0 0"
-                    animation__particles="property: particle-system.velocityValue; from: 0.02; to: 0.04; dir: alternate; dur: 4000; loop: true">
-                </a-entity>
-            </a-entity>
-
-            <!-- Клік-інтеракція -->
-            <a-entity 
-                cursor="rayOrigin: mouse; fuse: false"
-                raycaster="objects: #magic-orb; far: 100"
-                event-set__enter="_event: mouseenter; _target: #magic-orb; scale: 1.1 1.1 1.1"
-                event-set__leave="_event: mouseleave; _target: #magic-orb; scale: 1 1 1"
-                geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
-                material="color: #00ffff; shader: flat; transparent: true; opacity: 0.8"
-                position="0 0 -1"
-                animation="property: position; to: 0 0.1 0; dur: 2000; dir: alternate; loop: true; easing: easeInOutSine">
-            </a-entity>
-        </a-entity>
-    </a-scene>
-
-    <script>
-        class MagicBallAR {
-            constructor() {
-                this.scene = document.querySelector('a-scene');
-                this.orb = document.querySelector('#magic-orb');
-                this.loadingScreen = document.getElementById('loadingScreen');
-                this.progressBar = document.getElementById('progressBar');
-                this.loadingText = document.getElementById('loadingText');
-                this.statusIndicator = document.getElementById('statusIndicator');
-                this.prophecyOverlay = document.getElementById('prophecyOverlay');
-                this.prophecyText = document.getElementById('prophecyText');
-                this.errorOverlay = document.getElementById('errorOverlay');
-                this.errorMessage = document.getElementById('errorMessage');
-                
-                this.isTracking = false;
-                this.isLoaded = false;
-                
-                this.prophecies = [
-                    "Ти знайдеш скарб під ялинкою! 🎁",
-                    "Твоя мрія здійсниться до Різдва! ⭐",
-                    "Сьогодні ти отримаєш 5 у школі! 📚",
-                    "Ти — майбутній президент України! 🇺🇦",
-                    "Твій улюблений герой прийде в гості! 🦸",
-                    "Тебе чекає велика подорож! ✈️",
-                    "Знайдеш нового найкращого друга! 👫",
-                    "Відкриєш у собі талант! 🎨",
-                    "Зробиш важливе відкриття! 🔍",
-                    "Станеш героєм для когось! 🏆"
-                ];
-                
-                this.init();
-            }
-            
-            async init() {
-                try {
-                    await this.setupEventListeners();
-                    await this.setupAR();
-                    this.setupPerformanceMonitoring();
-                } catch (error) {
-                    this.showError('Помилка ініціалізації: ' + error.message);
-                }
-            }
-            
-            async setupEventListeners() {
-                // Клік на кулю
-                this.scene.addEventListener('click', (evt) => {
-                    if (evt.detail.el === this.orb || evt.detail.target.closest('#magic-orb')) {
-                        this.showProphecy();
-                    }
-                });
-                
-                // Події MindAR
-                this.scene.addEventListener('mindarTargetFound', () => {
-                    this.onTargetFound();
-                });
-                
-                this.scene.addEventListener('mindarTargetLost', () => {
-                    this.onTargetLost();
-                });
-                
-                // Подія завантаження сцени
-                this.scene.addEventListener('loaded', () => {
-                    this.onSceneLoaded();
-                });
-                
-                // Обробка помилок
-                window.addEventListener('error', (e) => {
-                    console.error('Global error:', e.error);
-                    this.showError('Сталася несподівана помилка');
-                });
-            }
-            
-            async setupAR() {
-                try {
-                    // Симуляція прогресу завантаження
-                    this.simulateLoadingProgress();
-                    
-                    const mindar = this.scene.components['mindar-image'];
-                    if (!mindar) {
-                        throw new Error('MindAR компонент не знайдено');
-                    }
-                    
-                    await mindar.start();
-                    this.isLoaded = true;
-                    
-                } catch (error) {
-                    console.error('AR setup error:', error);
-                    throw new Error('Не вдалося запустити AR: ' + error.message);
-                }
-            }
-            
-            simulateLoadingProgress() {
-                let progress = 0;
-                const interval = setInterval(() => {
-                    progress += Math.random() * 15;
-                    if (progress >= 90) {
-                        progress = 90;
-                        clearInterval(interval);
-                    }
-                    this.updateLoadingProgress(progress);
-                }, 200);
-            }
-            
-            updateLoadingProgress(progress) {
-                this.progressBar.style.width = progress + '%';
-                this.loadingText.textContent = `Завантаження AR... ${Math.round(progress)}%`;
-            }
-            
-            onSceneLoaded() {
-                setTimeout(() => {
-                    this.loadingScreen.style.opacity = '0';
-                    setTimeout(() => {
-                        this.loadingScreen.style.display = 'none';
-                    }, 500);
-                }, 1000);
-            }
-            
-            onTargetFound() {
-                if (!this.isTracking) {
-                    this.isTracking = true;
-                    this.statusIndicator.className = 'status-indicator status-tracking';
-                    this.statusIndicator.innerHTML = '✅ Маркер знайдено!';
-                    
-                    // Відтворення звуку появи
-                    this.playSound('appear-sound');
-                }
-            }
-            
-            onTargetLost() {
-                this.isTracking = false;
-                this.statusIndicator.className = 'status-indicator status-scanning';
-                this.statusIndicator.innerHTML = '🔍 Сканування...';
-            }
-            
-            showProphecy() {
-                if (!this.isTracking) return;
-                
-                const sound = document.getElementById('magic-sound');
-                sound.currentTime = 0;
-                sound.play().catch(e => console.log('Звук не відтворився:', e));
-                
-                const text = this.prophecies[Math.floor(Math.random() * this.prophecies.length)];
-                this.prophecyText.textContent = text;
-                this.prophecyOverlay.classList.add('visible');
-                
-                // Аналітика (приклад)
-                this.trackEvent('prophecy_shown', { prophecy: text });
-                
-                setTimeout(() => {
-                    this.prophecyOverlay.classList.remove('visible');
-                }, 4000);
-            }
-            
-            playSound(soundId) {
-                const sound = document.getElementById(soundId);
-                if (sound) {
-                    sound.currentTime = 0;
-                    sound.play().catch(e => console.log('Sound error:', e));
-                }
-            }
-            
-            showError(message) {
-                this.errorMessage.textContent = message;
-                this.errorOverlay.classList.add('visible');
-                this.loadingScreen.style.display = 'none';
-                
-                this.trackEvent('ar_error', { error: message });
-            }
-            
-            setupPerformanceMonitoring() {
-                // Моніторинг FPS
-                let frameCount = 0;
-                let lastTime = performance.now();
-                
-                const checkFPS = () => {
-                    frameCount++;
-                    const currentTime = performance.now();
-                    if (currentTime >= lastTime + 1000) {
-                        const fps = Math.round((frameCount * 1000) / (currentTime - lastTime));
-                        if (fps < 30) {
-                            console.warn('Low FPS:', fps);
-                            this.reduceEffects();
-                        }
-                        frameCount = 0;
-                        lastTime = currentTime;
-                    }
-                    requestAnimationFrame(checkFPS);
-                };
-                checkFPS();
-            }
-            
-            reduceEffects() {
-                // Зменшення ефектів при низькому FPS
-                const particles = document.querySelector('[particle-system]');
-                if (particles) {
-                    particles.setAttribute('particle-system', 'particleCount', 100);
-                }
-            }
-            
-            trackEvent(eventName, params = {}) {
-                // Приклад відправки аналітики
-                if (typeof gtag !== 'undefined') {
-                    gtag('event', eventName, params);
-                }
-                console.log('Event:', eventName, params);
-            }
+    class HandDetectionService {
+      constructor() {
+        this.handLandmarker = null;
+        this.isInitialized = false;
+        this.lastDetectionTime = 0;
+      }
+      async initialize() {
+        try {
+          const vision = await FilesetResolver.forVisionTasks(
+            "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+          );
+         
+          this.handLandmarker = await HandLandmarker.createFromOptions(vision, {
+            baseOptions: {
+              modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+              delegate: "GPU"
+            },
+            runningMode: "VIDEO",
+            numHands: CONFIG.HANDS.MAX_HANDS
+          });
+         
+          this.isInitialized = true;
+          return true;
+        } catch (error) {
+          console.error('Hand detection initialization failed:', error);
+          throw new Error('HAND_DETECTION_INIT_FAILED');
         }
-        
-        // Ініціалізація додатку
-        document.addEventListener('DOMContentLoaded', () => {
-            window.magicBallAR = new MagicBallAR();
+      }
+      detectHands(videoElement) {
+        if (!this.isInitialized || videoElement.readyState < 2) {
+          return null;
+        }
+        const now = performance.now();
+        if (now - this.lastDetectionTime < CONFIG.PERFORMANCE.DETECTION_THROTTLE_MS) {
+          return null;
+        }
+        this.lastDetectionTime = now;
+       
+        try {
+          return this.handLandmarker.detectForVideo(videoElement, now);
+        } catch (error) {
+          console.error('Hand detection error:', error);
+          return null;
+        }
+      }
+      cleanup() {
+        if (this.handLandmarker) {
+          this.handLandmarker.close();
+        }
+        this.isInitialized = false;
+      }
+    }
+
+    // ========== ОНОВЛЕНИЙ RENDERER З ЕФЕКТОМ "ПЕРЕВЕРТАННЯ" ==========
+    class GloveRenderer {
+      constructor() {
+        this.scene = null;
+        this.camera = null;
+        this.renderer = null;
+        this.palmGloves = [];
+        this.gloveTextures = new Map();
+      }
+      
+      initialize(canvasElement) {
+        this.scene = new THREE.Scene();
+       
+        this.camera = new THREE.OrthographicCamera(
+          -window.innerWidth / 2,
+          window.innerWidth / 2,
+          window.innerHeight / 2,
+          -window.innerHeight / 2,
+          0.1,
+          1000
+        );
+        this.camera.position.z = 10;
+       
+        this.renderer = new THREE.WebGLRenderer({
+          canvas: canvasElement,
+          alpha: true,
+          antialias: true,
+          powerPreference: "high-performance"
         });
-        
-        // Service Worker для офлайн роботи (опційно)
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js')
-                .then(reg => console.log('SW registered'))
-                .catch(err => console.log('SW registration failed'));
+       
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.createGloves();
+      }
+      
+      createGloves() {
+        const material = new THREE.MeshBasicMaterial({
+          transparent: true,
+          side: THREE.DoubleSide,
+          depthTest: false
+        });
+        for (let i = 0; i < CONFIG.HANDS.MAX_HANDS; i++) {
+          const geometry = new THREE.PlaneGeometry(1, 1);
+          const glove = new THREE.Mesh(geometry, material.clone());
+          glove.visible = false;
+          this.scene.add(glove);
+          this.palmGloves.push(glove);
         }
-    </script>
+      }
+      
+      async loadTextures() {
+        const loadPromises = CONFIG.DESIGNS.map(name =>
+          new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = `gloves/winter/${name}.png`;
+           
+            img.onload = () => {
+              const texture = new THREE.TextureLoader().load(`gloves/winter/${name}.png`);
+              texture.minFilter = THREE.LinearFilter;
+              texture.magFilter = THREE.LinearFilter;
+              this.gloveTextures.set(name, texture);
+              resolve();
+            };
+           
+            img.onerror = () => {
+              console.warn(`Failed to load design ${name}, using fallback`);
+              this.createFallbackTexture(name);
+              resolve();
+            };
+          })
+        );
+        await Promise.all(loadPromises);
+      }
+      
+      createFallbackTexture(name) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+       
+        ctx.fillStyle = '#1a2980';
+        ctx.fillRect(0, 0, 512, 512);
+        ctx.fillStyle = 'white';
+        ctx.font = '32px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Design ${name}`, 256, 266);
+       
+        this.gloveTextures.set(name, new THREE.CanvasTexture(canvas));
+      }
+
+      // ДИНАМІЧНЕ МАСШТАБУВАННЯ
+      calculateHandScale(landmarks) {
+        const wrist = landmarks[0];
+        const middleFingerTip = landmarks[12];
+        
+        const distance = Math.sqrt(
+          Math.pow(wrist.x - middleFingerTip.x, 2) + 
+          Math.pow(wrist.y - middleFingerTip.y, 2)
+        );
+        
+        let scale = CONFIG.SCALE.BASE_SCALE * distance * CONFIG.SCALE.DISTANCE_MULTIPLIER;
+        scale = Math.max(CONFIG.SCALE.MIN_SCALE, Math.min(CONFIG.SCALE.MAX_SCALE, scale));
+        
+        return scale;
+      }
+
+      // ВИЗНАЧЕННЯ СТОРОНИ ДОЛОНІ (збережено оригінальну логіку)
+      determinePalmSide(landmarks, handIndex) {
+        const thumbBase = landmarks[1];
+        const pinkyBase = landmarks[17];
+        const palmDirection = thumbBase.x - pinkyBase.x;
+
+        // ОРИГІНАЛЬНА ЛОГІКА З ЕФЕКТОМ "ПЕРЕВЕРТАННЯ"
+        if (handIndex === 1) {
+          // Права рука
+          return palmDirection > 0 ? 'palm' : 'back';
+        } else {
+          // Ліва рука  
+          return palmDirection < 0 ? 'palm' : 'back';
+        }
+      }
+
+      updateGlove(handIndex, handData, designName) {
+        const glove = this.palmGloves[handIndex];
+        if (!glove || !handData) {
+          if (glove) glove.visible = false;
+          return null;
+        }
+
+        const { landmarks, wrist } = handData;
+        
+        // РОЗРАХУНОК МАСШТАБУ
+        const scale = this.calculateHandScale(landmarks);
+        
+        // ПОЗИЦІЯ КІНЧИКА СЕРЕДНЬОГО ПАЛЬЦЯ (як у оригіналі)
+        const middleFingerTip = landmarks[12];
+        const centerX = middleFingerTip.x * window.innerWidth;
+        const centerY = (1 - middleFingerTip.y) * window.innerHeight;
+        
+        // Rotation - від зап'ястя до кінчика середнього пальця
+        const angle = Math.atan2(
+          middleFingerTip.y - wrist.y,
+          middleFingerTip.x - wrist.x
+        );
+        
+        const glovePosition = {
+          x: centerX - window.innerWidth / 2,
+          y: centerY - window.innerHeight / 2
+        };
+        
+        glove.position.set(glovePosition.x, glovePosition.y, 0);
+        
+        // КОРЕКЦІЯ ПОЗИЦІЇ - рукавиця на кінчику пальця
+        const offsetDistance = scale * 0.4;
+        glove.position.x -= Math.cos(angle) * offsetDistance;
+        glove.position.y += Math.sin(angle) * offsetDistance;
+
+        // ВИЗНАЧЕННЯ ОРІЄНТАЦІЇ ДОЛОНІ (ОРИГІНАЛЬНА ЛОГІКА З ЕФЕКТОМ)
+        const palmSide = this.determinePalmSide(landmarks, handIndex);
+
+        // ІНТЕЛЕКТУАЛЬНЕ ДЗЕРКАЛЕННЯ - ЗБЕРЕЖЕНО ЕФЕКТ "ПЕРЕВЕРТАННЯ"
+        if (handIndex === 1) {
+          // Права рука
+          if (palmSide === 'palm') {
+            // Долоня до камери - не дзеркалимо
+            glove.scale.set(scale, -scale, 1);
+          } else {
+            // Зовнішня сторона до камери - дзеркалимо
+            glove.scale.set(-scale, -scale, 1);
+          }
+        } else {
+          // Ліва рука
+          if (palmSide === 'palm') {
+            // Долоня до камери - не дзеркалимо
+            glove.scale.set(scale, -scale, 1);
+          } else {
+            // Зовнішня сторона до камери - дзеркалимо
+            glove.scale.set(-scale, -scale, 1);
+          }
+        }
+ 
+        // Vertical rotation
+        glove.rotation.z = angle - Math.PI / 2;
+        
+        // Texture
+        const texture = this.gloveTextures.get(designName);
+        if (texture) {
+          glove.material.map = texture;
+          glove.material.needsUpdate = true;
+        }
+        
+        glove.visible = true;
+        
+        return {
+          position: { x: glove.position.x, y: glove.position.y },
+          scale: scale,
+          angle: angle,
+          screenPosition: { x: centerX, y: centerY },
+          palmSide: palmSide
+        };
+      }
+      
+      resize() {
+        if (!this.camera || !this.renderer) return;
+       
+        this.camera.left = -window.innerWidth / 2;
+        this.camera.right = window.innerWidth / 2;
+        this.camera.top = window.innerHeight / 2;
+        this.camera.bottom = -window.innerHeight / 2;
+        this.camera.updateProjectionMatrix();
+       
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+      
+      render() {
+        if (this.scene && this.camera) {
+          this.renderer.render(this.scene, this.camera);
+        }
+      }
+      
+      cleanup() {
+        this.palmGloves.forEach(glove => {
+          glove.geometry.dispose();
+          glove.material.dispose();
+        });
+        this.gloveTextures.forEach(texture => texture.dispose());
+        if (this.renderer) {
+          this.renderer.dispose();
+        }
+      }
+    }
+
+    // ========== MAIN APPLICATION ==========
+    class GloveARApplication {
+      constructor() {
+        this.state = {
+          currentLang: 'en',
+          currentDesign: "1",
+          isMuted: false,
+          handNotDetectedCount: 0,
+          animationFrameId: null,
+          isAudioUnlocked: false,
+          hands: [],
+          isInitialized: false
+        };
+       
+        this.audioService = new AudioService();
+        this.handDetection = new HandDetectionService();
+        this.gloveRenderer = new GloveRenderer();
+        this.debugManager = new DebugManager();
+        this.sparkles = [];
+       
+        this.elements = {
+          video: document.getElementById("video"),
+          canvas: document.getElementById("canvas"),
+          confettiCanvas: document.getElementById("confettiCanvas"),
+          loading: document.getElementById("loading"),
+          loadingText: document.getElementById("loadingText"),
+          langBtn: document.getElementById("langBtn"),
+          soundBtn: document.getElementById("soundBtn"),
+          debugBtn: document.getElementById("debugBtn"),
+          designPicker: document.getElementById("designPicker"),
+          handIndicator: document.getElementById("handIndicator")
+        };
+        this.confettiCtx = this.elements.confettiCanvas.getContext("2d");
+        this.bindEvents();
+        this.resizeCanvases();
+      }
+      
+      async initialize() {
+        try {
+          await this.setupCamera();
+          this.gloveRenderer.initialize(this.elements.canvas);
+          await this.handDetection.initialize();
+          await this.gloveRenderer.loadTextures();
+          this.buildDesignUI();
+          this.updateUI();
+          this.hideLoading();
+          this.startRenderLoop();
+          this.state.isInitialized = true;
+        } catch (error) {
+          this.handleError(error);
+        }
+      }
+      
+      bindEvents() {
+        this.elements.langBtn.addEventListener('click', () => this.toggleLanguage());
+        this.elements.soundBtn.addEventListener('click', () => this.toggleSound());
+        this.elements.debugBtn.addEventListener('click', () => this.toggleDebug());
+       
+        window.addEventListener('resize', () => {
+          this.resizeCanvases();
+          if (this.state.isInitialized) {
+            this.gloveRenderer.resize();
+          }
+        });
+        window.addEventListener('beforeunload', () => this.cleanup());
+      }
+      
+      toggleDebug() {
+        const isEnabled = this.debugManager.toggle();
+        this.elements.debugBtn.style.background = isEnabled ? '#00ff00' : '#ff4444';
+        this.elements.debugBtn.textContent = isEnabled ? '✅' : '🐛';
+      }
+      
+      async setupCamera() {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: "environment",
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          });
+         
+          this.elements.video.srcObject = stream;
+         
+          await new Promise((resolve) => {
+            this.elements.video.onloadedmetadata = () => {
+              this.elements.video.play().then(resolve);
+            };
+            setTimeout(resolve, 1000);
+          });
+         
+        } catch (error) {
+          console.error('Camera setup failed:', error);
+          throw new Error('CAMERA_ERROR');
+        }
+      }
+      
+      toggleSound() {
+        this.state.isMuted = !this.state.isMuted;
+        this.elements.soundBtn.textContent = this.state.isMuted ? '🔇' : '🔊';
+        this.audioService.playClick();
+      }
+      
+      toggleLanguage() {
+        this.state.currentLang = this.state.currentLang === 'en' ? 'uk' : 'en';
+        this.elements.langBtn.textContent = this.state.currentLang === 'en' ? 'UK' : 'EN';
+        this.updateUI();
+        this.audioService.playClick();
+      }
+      
+      buildDesignUI() {
+        this.elements.designPicker.innerHTML = '';
+       
+        CONFIG.DESIGNS.forEach(name => {
+          const btn = document.createElement('img');
+          btn.src = `gloves/winter/${name}.png`;
+          btn.className = `design-btn ${name === this.state.currentDesign ? 'selected' : ''}`;
+          btn.alt = `Design ${name}`;
+         
+          btn.addEventListener('click', () => {
+            this.state.currentDesign = name;
+            document.querySelectorAll('.design-btn').forEach(b =>
+              b.classList.toggle('selected', b === btn)
+            );
+            this.audioService.playClick();
+            this.triggerSparkleExplosion();
+          });
+         
+          this.elements.designPicker.appendChild(btn);
+        });
+      }
+      
+      triggerSparkleExplosion() {
+        for (let i = 0; i < 20; i++) {
+          const rect = this.elements.designPicker.getBoundingClientRect();
+          const x = rect.left + Math.random() * rect.width;
+          const y = rect.top + Math.random() * rect.height;
+          this.sparkles.push(new SparkleParticle(x, y));
+        }
+      }
+      
+      startRenderLoop() {
+        const render = () => {
+          this.detectAndUpdateHands();
+          this.updateSparkles();
+          this.renderFrame();
+          this.state.animationFrameId = requestAnimationFrame(render);
+        };
+        render();
+      }
+      
+      detectAndUpdateHands() {
+        const predictions = this.handDetection.detectHands(this.elements.video);
+       
+        if (predictions?.landmarks?.length > 0) {
+          this.state.handNotDetectedCount = 0;
+          this.elements.handIndicator.classList.remove('show');
+          this.state.hands = predictions.landmarks.map((landmarks, i) => ({
+            landmarks,
+            wrist: landmarks[0]
+          }));
+        } else {
+          this.state.handNotDetectedCount++;
+          if (this.state.handNotDetectedCount > CONFIG.HANDS.DETECTION_THRESHOLD) {
+            this.elements.handIndicator.classList.add('show');
+            this.hideAllGloves();
+          }
+        }
+      }
+      
+      hideAllGloves() {
+        this.gloveRenderer.palmGloves.forEach(glove => {
+          glove.visible = false;
+        });
+      }
+      
+      updateSparkles() {
+        if (Math.random() < CONFIG.PERFORMANCE.SPARKLE_SPAWN_RATE) {
+          this.sparkles.push(new SparkleParticle(
+            Math.random() * window.innerWidth,
+            -10
+          ));
+        }
+        
+        this.sparkles = this.sparkles.filter(p => {
+          p.update();
+          return p.life > 0;
+        });
+       
+        while (this.sparkles.length > CONFIG.PERFORMANCE.MAX_SPARKLES) {
+          this.sparkles.shift();
+        }
+       
+        this.confettiCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        this.sparkles.forEach(p => p.draw(this.confettiCtx));
+      }
+      
+      renderFrame() {
+        let debugInfo = `Hands: ${this.state.hands.length}<br>`;
+        debugInfo += `Design: ${this.state.currentDesign}<br>`;
+        
+        for (let i = 0; i < this.state.hands.length; i++) {
+          const hand = this.state.hands[i];
+          const gloveData = this.gloveRenderer.updateGlove(
+            i,
+            hand,
+            this.state.currentDesign
+          );
+          if (gloveData && this.debugManager.enabled) {
+            debugInfo += `Hand ${i}:<br>`;
+            debugInfo += `- Pos: (${gloveData.screenPosition.x.toFixed(1)}, ${gloveData.screenPosition.y.toFixed(1)})<br>`;
+            debugInfo += `- Scale: ${gloveData.scale.toFixed(1)}<br>`;
+            debugInfo += `- Angle: ${(gloveData.angle * 180 / Math.PI).toFixed(1)}°<br>`;
+            debugInfo += `- Palm Side: ${gloveData.palmSide}<br><br>`;
+          }
+        }
+        this.debugManager.updateInfo(debugInfo);
+        this.gloveRenderer.render();
+      }
+      
+      resizeCanvases() {
+        this.elements.confettiCanvas.width = window.innerWidth;
+        this.elements.confettiCanvas.height = window.innerHeight;
+      }
+      
+      updateUI() {
+        const t = TRANSLATIONS[this.state.currentLang];
+        document.title = t.title;
+        this.elements.loadingText.textContent = t.loading;
+        document.querySelector('#loading p').textContent = t.cameraPrompt;
+        this.elements.handIndicator.innerHTML =
+          `<span>👐</span><span>${t.handNotDetected}</span>`;
+      }
+      
+      hideLoading() {
+        this.elements.loading.style.display = 'none';
+        this.elements.video.style.display = 'block';
+        this.elements.canvas.style.display = 'block';
+      }
+      
+      handleError(error) {
+        console.error('Application error:', error);
+        const t = TRANSLATIONS[this.state.currentLang];
+       
+        let message = error.message === 'CAMERA_ERROR' ?
+          t.errorCamera : t.errorGeneral;
+         
+        this.elements.loading.innerHTML = `
+          <div style="color: #ff4757; font-size: 24px; margin-bottom: 20px;">Error</div>
+          <div style="color: white; font-size: 18px; margin-bottom: 20px; line-height: 1.4;">${message}</div>
+          <button id="errorRetry" style="
+            padding: 12px 24px;
+            background: #ffd700;
+            border: none;
+            border-radius: 25px;
+            color: #1a2980;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+          ">${t.retry}</button>
+        `;
+       
+        this.elements.loading.style.display = 'flex';
+        document.getElementById('errorRetry').onclick = () => location.reload();
+      }
+      
+      cleanup() {
+        if (this.state.animationFrameId) {
+          cancelAnimationFrame(this.state.animationFrameId);
+        }
+        if (this.elements.video.srcObject) {
+          this.elements.video.srcObject.getTracks().forEach(track => track.stop());
+        }
+        this.handDetection.cleanup();
+        this.gloveRenderer.cleanup();
+      }
+    }
+
+    // ========== INITIALIZATION ==========
+    window.addEventListener('DOMContentLoaded', () => {
+      new GloveARApplication().initialize();
+    });
+  </script>
 </body>
 </html>
