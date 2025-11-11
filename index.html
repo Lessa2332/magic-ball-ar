@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MindAR Magic Orb of Prophecy</title>
+    <title>Magic Ball AR - Пророцтво</title>
     <script src="https://cdn.jsdelivr.net/npm/mindar-image-three@1.0.0/dist/mindar-image-three.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/examples/js/loaders/GLTFLoader.js"></script> <!-- Для сумісності, але ми не використовуємо GLB -->
     <style>
-        /* Вбудований style.css */
+        /* Адаптований style.css для твого репо */
         body {
             margin: 0;
             padding: 0;
@@ -51,17 +50,19 @@
             width: 100vw;
             height: 100vh;
         }
+        /* Додано для магічного звуку */
+        audio { display: none; }
     </style>
 </head>
 <body>
     <div class="instructions">
-        <p>Відскануй зображення-ціль (чорний квадрат з білим колом). Доторкнись до кулі для пророцтва!</p>
+        <p>Відскануй маркер (marker.png) за допомогою камери. Доторкнись до магічної кулі для пророцтва! (Використовує targets.mind з твого репо)</p>
     </div>
     <div id="ar-root"></div>
+    <audio id="magic-sound" src="magic.mp3" preload="auto"></audio> <!-- Інтеграція з твоїм magic.mp3 -->
 
     <script>
-        // Вбудований magic-orb.ts (як JS, без TypeScript компіляції)
-        // === createMagicOrb функція ===
+        // Адаптований magic-orb.ts (як JS для твого репо)
         function createMagicOrb(scene) {
             const group = new THREE.Group();
 
@@ -179,6 +180,11 @@
         ];
 
         function showProphecy() {
+            // Відтвори звук з magic.mp3
+            const sound = document.getElementById('magic-sound');
+            sound.currentTime = 0;
+            sound.play().catch(e => console.log('Звук не відтворився:', e));
+
             const text = prophecies[Math.floor(Math.random() * prophecies.length)];
             const div = document.createElement('div');
             div.innerHTML = `<h2>Пророцтво:</h2><p>${text}</p>`;
@@ -187,7 +193,7 @@
             setTimeout(() => div.remove(), 4000);
         }
 
-        // === MindAR Setup ===
+        // === MindAR Setup (адаптовано під твій targets.mind та marker.png) ===
         const startButton = document.createElement('button');
         startButton.textContent = 'Запустити AR';
         startButton.style.position = 'fixed';
@@ -205,11 +211,10 @@
         startButton.addEventListener('click', async () => {
             startButton.remove();
 
-            // Замість targets.mind — використовуй data URL для простого маркера (якщо немає .mind, це placeholder)
-            // Для реального: завантаж targets.mind і скомпілюй з target.jpg за допомогою mindar-image-compiler
+            // Використовуємо твій targets.mind (скомпільований з marker.png)
             const mindarThree = new window.MINDAR.ImageThree({
                 container: document.getElementById('ar-root'),
-                imageTargetSrc: './targets.mind', // Заміни на реальний файл або скомпілюй
+                imageTargetSrc: './targets.mind', // Твій файл з репо
                 maxTrack: 1,
                 uiLoading: "no",
                 uiScanning: "no",
@@ -249,32 +254,33 @@
 
         // PWA Manifest (для офлайн)
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js'); // Додай service worker для кешу
+            navigator.serviceWorker.register('/sw.js'); // Додай service worker, якщо потрібно
         }
     </script>
 
-    <!-- Вбудований README.ua.md як коментар -->
+    <!-- Вбудований README (оновлений для твого репо) -->
     <!--
-    # Магічна Куля Пророцтв (MindAR + Three.js)
+    # Magic Ball AR
 
-    ## Встановлення
-    1. Скомпілюй targets.mind з target.jpg: npm install -g @mindar/image-compiler; mindar-image-compiler -i target.jpg -o targets.mind
-    2. Відкрий index.html в браузері (Chrome/Safari).
+    ## Опис
+    AR-додаток з магічною кулею пророцтв на MindAR + Three.js. Доторкнись — отримай пророцтво з звуком!
 
-    ## Файли
-    - index.html: Головний файл
-    - magic-orb.ts: Генерація кулі (вбудовано як JS)
-    - targets.mind: Маркер (скомпілюй з target.jpg)
-    - target.jpg: Чорний квадрат з білим колом (A5, 300 DPI)
-    - style.css: Стилі (вбудовано)
-    - PDF_A5.pdf: Для друку (див. нижче)
+    ## Файли в репо:
+    - index.html: Головний файл (адаптовано під твоє репо)
+    - magic.mp3: Звук пророцтва
+    - marker.png: Зображення для компіляції targets.mind
+    - targets.mind: Скомпілюй з marker.png: npm install -g @mindar/image-compiler; mindar-image-compiler -i marker.png -o targets.mind
+    - README: Цей файл
 
-    ## PDF_A5.pdf вміст (згенеруй через print-to-PDF)
-    [Image: target.jpg]
-    QR: https://github.io/.../index.html
-    Доторкнись до кулі!
+    ## Деплой на GitHub Pages
+    1. Push зміни в main.
+    2. Settings → Pages → Branch: main → Save.
+    3. Посилання: https://твій-нік.github.io/magic-ball-ar
 
-    Розмір проєкту: <500 KB
+    ## PDF для друку (A5)
+    Використовуй marker.png як image target. Додай QR на друковану сторінку: https://твій-нік.github.io/magic-ball-ar
+
+    Розмір: <500 KB. Працює на Chrome/Safari.
     -->
 
 </body>
