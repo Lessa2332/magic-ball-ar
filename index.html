@@ -1,186 +1,533 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <meta name="description" content="Магічна куля пророцтв у AR для дітей" />
-  <title>🔮 Магічна куля — Пророцтво!</title>
-
-  <!-- A-Frame + MindAR -->
-  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
-  <script src="https://unpkg.com/aframe-particle-system-component@1.0.10/dist/aframe-particle-system-component.min.js"></script>
-
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: #000;
-      font-family: 'Comic Sans MS', cursive, sans-serif;
-      color: white;
-    }
-    .loader {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 20, 30, 0.95);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      text-align: center;
-      color: #00ffff;
-      font-size: 1.4em;
-      padding: 20px;
-      box-sizing: border-box;
-    }
-    .loader h1 {
-      font-size: 2.2em;
-      margin: 0 0 15px;
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-    .prophecy {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 255, 255, 0.92);
-      padding: 20px;
-      border-radius: 18px;
-      text-align: center;
-      z-index: 200;
-      font-size: 18px;
-      max-width: 85%;
-      animation: fadeInOut 4s ease-in-out;
-    }
-    @keyframes fadeInOut {
-      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
-      20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-      80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-      100% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
-    }
-    audio { display: none; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magic Ball AR - Пророцтво (A-Frame + MindAR)</title>
+    
+    <!-- Preload критичних ресурсів -->
+    <link rel="preload" href="./targets.mind" as="fetch" crossorigin>
+    <link rel="preload" href="magic.mp3" as="audio">
+    
+    <!-- Фікс favicon: inline SVG -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌟</text></svg>">
+    
+    <!-- A-Frame + MindAR CDN -->
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.3/dist/mindar-image.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.3/dist/mindar-image-aframe.prod.js"></script>
+    
+    <style>
+        :root {
+            --primary-glow: #00ffff;
+            --secondary-glow: #0088ff;
+            --transition-speed: 0.3s;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #000428, #004e92);
+            font-family: 'Arial', sans-serif;
+            color: #fff;
+            position: relative;
+        }
+        
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 20, 40, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 255, 255, 0.3);
+            border-top: 3px solid var(--primary-glow);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        .loading-progress {
+            width: 200px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        
+        .loading-progress-bar {
+            height: 100%;
+            background: var(--primary-glow);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        /* UI Components */
+        .instructions {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            font-size: 14px;
+            line-height: 1.4;
+            z-index: 50;
+            backdrop-filter: blur(10px);
+            transition: opacity var(--transition-speed);
+        }
+        
+        .status-indicator {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 50;
+            transition: all var(--transition-speed);
+        }
+        
+        .status-tracking { background: rgba(0, 255, 0, 0.2); border: 1px solid #00ff00; }
+        .status-scanning { background: rgba(255, 255, 0, 0.2); border: 1px solid #ffff00; }
+        .status-error { background: rgba(255, 0, 0, 0.2); border: 1px solid #ff0000; }
+        
+        .prophecy-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.95), rgba(0, 136, 255, 0.95));
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 100;
+            font-size: 20px;
+            max-width: 85%;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.5);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .prophecy-overlay.visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        
+        .prophecy-title {
+            font-size: 24px;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .prophecy-text {
+            font-size: 18px;
+            line-height: 1.4;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        .error-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .error-overlay.visible {
+            display: flex;
+        }
+        
+        /* Анімації */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(0, 255, 255, 0.8); }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        
+        /* Адаптивність */
+        @media (max-width: 768px) {
+            .instructions {
+                font-size: 12px;
+                padding: 12px;
+            }
+            
+            .prophecy-overlay {
+                padding: 20px;
+                font-size: 18px;
+            }
+            
+            .prophecy-title { font-size: 20px; }
+            .prophecy-text { font-size: 16px; }
+        }
+        
+        audio { display: none; }
+    </style>
 </head>
 <body>
-  <div class="loader" id="loader">
-    <h1>🔮 Магічна куля</h1>
-    <p>Наведи камеру на маркер!<br>Потім торкнись кулі 👆</p>
-  </div>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <div class="loading-progress">
+            <div class="loading-progress-bar" id="progressBar"></div>
+        </div>
+        <div id="loadingText">Завантаження AR...</div>
+    </div>
 
-  <a-scene
-    mindar-image="imageTargetSrc: ./targets.mind;"
-    embedded
-    vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: false"
-    loading-screen="enabled: false"
-    renderer="colorManagement: true; physicallyCorrectLights: true;"
-  >
-    <a-assets>
-      <audio id="magic-sound" src="magic.mp3" preload="auto"></audio>
-    </a-assets>
+    <!-- UI Elements -->
+    <div class="instructions">
+        <p>📱 Наведи камеру на маркер (marker.png). Доторкнись до магічної кулі для пророцтва!</p>
+    </div>
+    
+    <div class="status-indicator status-scanning" id="statusIndicator">
+        🔍 Сканування...
+    </div>
 
-    <a-camera position="0 0 1.5" look-controls="enabled: false">
-      <a-cursor
-        fuse="true"
-        fuse-timeout="800"
-        raycaster="objects: .magic-orb-mesh"
-        animation__click="property: scale; startEvents: click; from: 1 1 1; to: 1.2 1.2 1.2; dur: 200; easing: easeOutQuad"
-        animation__reset="property: scale; startEvents: animationcomplete__click; to: 1 1 1; dur: 300; easing: easeInOutQuad"
-      ></a-cursor>
-    </a-camera>
+    <!-- Prophecy Overlay -->
+    <div class="prophecy-overlay" id="prophecyOverlay">
+        <div class="prophecy-title">🌟 Магічне Пророцтво</div>
+        <div class="prophecy-text" id="prophecyText"></div>
+    </div>
 
-    <a-entity mindar-image-target="targetIndex: 0">
-      <a-entity id="magic-orb" position="0 0 -0.3" scale="0.6 0.6 0.6" visible="false">
-        <!-- Магічна куля -->
-        <a-sphere
-          class="magic-orb-mesh"
-          radius="0.5"
-          material="color: #00ffff; shader: flat; transparent: true; opacity: 0.85"
-          animation__pulse="property: scale; dir: alternate; dur: 1800; from: 1 1 1; to: 1.08 1.08 1.08; loop: true; easing: easeInOutSine"
-        ></a-sphere>
+    <!-- Error Overlay -->
+    <div class="error-overlay" id="errorOverlay">
+        <h2>❌ Помилка AR</h2>
+        <p id="errorMessage">Не вдалося запустити AR. Перевірте дозвіл камери.</p>
+        <button onclick="window.location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #00ffff; border: none; border-radius: 5px; cursor: pointer;">
+            Спробувати знову
+        </button>
+    </div>
 
-        <!-- Внутрішнє світло -->
-        <a-light type="point" color="#00ffff" intensity="1.8" distance="3" decay="1"></a-light>
+    <!-- Audio Elements -->
+    <audio id="magic-sound" src="magic.mp3" preload="auto"></audio>
+    <audio id="appear-sound" src="appear.mp3" preload="auto"></audio>
 
-        <!-- Частинки (магічна пилка) -->
-        <a-entity
-          particle-system="
-            preset: snow;
-            particleCount: 200;
-            color: #88ffff;
-            size: 0.04;
-            maxAge: 4;
-            velocitySpread: 0.3;
-            positionSpread: 0.6 0.6 0.6;
-            accelerationSpread: 0.1;
-            opacity: 0.7;
-          "
-        ></a-entity>
-      </a-entity>
-    </a-entity>
-  </a-scene>
+    <!-- A-Frame Scene -->
+    <a-scene 
+        mindar-image="imageTargetSrc: ./targets.mind; maxTrack: 1; filterMinCF: 0.0001; filterBeta: 0.01; uiScanning: #no-ui; uiLoading: #no-ui"
+        color-space="sRGB"
+        renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true"
+        vr-mode-ui="enabled: false"
+        device-orientation-permission-ui="enabled: false"
+        embedded
+        a-assets-timeout="15000">
+        
+        <!-- Камера -->
+        <a-camera position="0 0 0" look-controls="enabled: false" wasd-controls="enabled: false"></a-camera>
 
-  <script>
-    const prophecies = [
-      "Ти знайдеш скарб під ялинкою!",
-      "Твоя мрія здійсниться до Різдва!",
-      "Сьогодні ти отримаєш 5 у школі!",
-      "Ти — майбутній президент України!",
-      "Твій улюблений герой прийде в гості!"
-    ];
+        <!-- Ціль: mindar-image-target -->
+        <a-entity mindar-image-target="targetIndex: 0">
+            <!-- Магічна куля -->
+            <a-entity id="magic-orb" position="0 0 0" scale="0.5 0.5 0.5">
+                <!-- Основна сфера -->
+                <a-sphere 
+                    geometry="primitive: sphere; radius: 1; segmentsWidth: 64; segmentsHeight: 64"
+                    material="color: #001133; emissive: #00ffff; emissiveIntensity: 0.5; transparent: true; opacity: 0.9; shader: standard"
+                    animation__pulse="property: material.emissiveIntensity; from: 0.5; to: 1.0; dir: alternate; dur: 2000; easing: easeInOutSine; loop: true"
+                    animation__rotate="property: rotation; to: 0 360 0; dur: 15000; easing: linear; loop: true">
+                </a-sphere>
 
-    function showProphecy() {
-      const sound = document.getElementById('magic-sound');
-      if (sound) {
-        sound.currentTime = 0;
-        sound.play().catch(e => console.warn('Звук заблоковано:', e));
-      }
+                <!-- Додатковий glow ефект -->
+                <a-sphere
+                    geometry="primitive: sphere; radius: 1.1; segmentsWidth: 32; segmentsHeight: 32"
+                    material="color: #00ffff; transparent: true; opacity: 0.1; shader: flat; side: back"
+                    animation__pulse-opacity="property: material.opacity; from: 0.05; to: 0.15; dur: 3000; easing: easeInOutSine; loop: true">
+                </a-sphere>
 
-      const text = prophecies[Math.floor(Math.random() * prophecies.length)];
-      const div = document.createElement('div');
-      div.innerHTML = `<h2>Пророцтво:</h2><p>${text}</p>`;
-      div.className = 'prophecy';
-      document.body.appendChild(div);
-      setTimeout(() => {
-        if (div.parentNode) div.remove();
-      }, 4000);
-    }
+                <!-- Внутрішнє світло -->
+                <a-point-light 
+                    position="0 0 0" 
+                    color="#00ffff" 
+                    intensity="2" 
+                    distance="3"
+                    animation="property: intensity; from: 1.5; to: 2.5; dir: alternate; dur: 2000; easing: easeInOutSine; loop: true">
+                </a-point-light>
 
-    // Обробка подій маркера
-    const loader = document.getElementById('loader');
-    const orb = document.getElementById('magic-orb');
+                <!-- Частинки -->
+                <a-entity 
+                    particle-system="preset: dust; color: #88ffff, #00ffff, #ffffff; particleCount: 200; velocityValue: 0.03; velocitySpread: 0.05; accelerationValue: 0; accelerationSpread: 0.01; startSize: 0.03; endSize: 0.01; opacity: 0.4; blending: additive; texture: default"
+                    position="0 0 0"
+                    animation__particles="property: particle-system.velocityValue; from: 0.02; to: 0.04; dir: alternate; dur: 4000; loop: true">
+                </a-entity>
+            </a-entity>
 
-    document.querySelector('[mindar-image-target]').addEventListener('targetFound', () => {
-      console.log('✨ Маркер знайдено! Магічна куля активна.');
-      loader.style.display = 'none';
-      orb.setAttribute('visible', 'true');
-    });
+            <!-- Клік-інтеракція -->
+            <a-entity 
+                cursor="rayOrigin: mouse; fuse: false"
+                raycaster="objects: #magic-orb; far: 100"
+                event-set__enter="_event: mouseenter; _target: #magic-orb; scale: 1.1 1.1 1.1"
+                event-set__leave="_event: mouseleave; _target: #magic-orb; scale: 1 1 1"
+                geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
+                material="color: #00ffff; shader: flat; transparent: true; opacity: 0.8"
+                position="0 0 -1"
+                animation="property: position; to: 0 0.1 0; dur: 2000; dir: alternate; loop: true; easing: easeInOutSine">
+            </a-entity>
+        </a-entity>
+    </a-scene>
 
-    document.querySelector('[mindar-image-target]').addEventListener('targetLost', () => {
-      console.log('⚠️ Маркер втрачено.');
-      loader.style.display = 'flex';
-      orb.setAttribute('visible', 'false');
-    });
-
-    // Клік по кулі
-    document.addEventListener('click', (evt) => {
-      if (evt.target.classList.contains('a-cursor__ring') || evt.target.tagName === 'CANVAS') {
-        const orbMesh = document.querySelector('.magic-orb-mesh');
-        if (orbMesh && orb.getAttribute('visible') === 'true') {
-          showProphecy();
+    <script>
+        class MagicBallAR {
+            constructor() {
+                this.scene = document.querySelector('a-scene');
+                this.orb = document.querySelector('#magic-orb');
+                this.loadingScreen = document.getElementById('loadingScreen');
+                this.progressBar = document.getElementById('progressBar');
+                this.loadingText = document.getElementById('loadingText');
+                this.statusIndicator = document.getElementById('statusIndicator');
+                this.prophecyOverlay = document.getElementById('prophecyOverlay');
+                this.prophecyText = document.getElementById('prophecyText');
+                this.errorOverlay = document.getElementById('errorOverlay');
+                this.errorMessage = document.getElementById('errorMessage');
+                
+                this.isTracking = false;
+                this.isLoaded = false;
+                
+                this.prophecies = [
+                    "Ти знайдеш скарб під ялинкою! 🎁",
+                    "Твоя мрія здійсниться до Різдва! ⭐",
+                    "Сьогодні ти отримаєш 5 у школі! 📚",
+                    "Ти — майбутній президент України! 🇺🇦",
+                    "Твій улюблений герой прийде в гості! 🦸",
+                    "Тебе чекає велика подорож! ✈️",
+                    "Знайдеш нового найкращого друга! 👫",
+                    "Відкриєш у собі талант! 🎨",
+                    "Зробиш важливе відкриття! 🔍",
+                    "Станеш героєм для когось! 🏆"
+                ];
+                
+                this.init();
+            }
+            
+            async init() {
+                try {
+                    await this.setupEventListeners();
+                    await this.setupAR();
+                    this.setupPerformanceMonitoring();
+                } catch (error) {
+                    this.showError('Помилка ініціалізації: ' + error.message);
+                }
+            }
+            
+            async setupEventListeners() {
+                // Клік на кулю
+                this.scene.addEventListener('click', (evt) => {
+                    if (evt.detail.el === this.orb || evt.detail.target.closest('#magic-orb')) {
+                        this.showProphecy();
+                    }
+                });
+                
+                // Події MindAR
+                this.scene.addEventListener('mindarTargetFound', () => {
+                    this.onTargetFound();
+                });
+                
+                this.scene.addEventListener('mindarTargetLost', () => {
+                    this.onTargetLost();
+                });
+                
+                // Подія завантаження сцени
+                this.scene.addEventListener('loaded', () => {
+                    this.onSceneLoaded();
+                });
+                
+                // Обробка помилок
+                window.addEventListener('error', (e) => {
+                    console.error('Global error:', e.error);
+                    this.showError('Сталася несподівана помилка');
+                });
+            }
+            
+            async setupAR() {
+                try {
+                    // Симуляція прогресу завантаження
+                    this.simulateLoadingProgress();
+                    
+                    const mindar = this.scene.components['mindar-image'];
+                    if (!mindar) {
+                        throw new Error('MindAR компонент не знайдено');
+                    }
+                    
+                    await mindar.start();
+                    this.isLoaded = true;
+                    
+                } catch (error) {
+                    console.error('AR setup error:', error);
+                    throw new Error('Не вдалося запустити AR: ' + error.message);
+                }
+            }
+            
+            simulateLoadingProgress() {
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress >= 90) {
+                        progress = 90;
+                        clearInterval(interval);
+                    }
+                    this.updateLoadingProgress(progress);
+                }, 200);
+            }
+            
+            updateLoadingProgress(progress) {
+                this.progressBar.style.width = progress + '%';
+                this.loadingText.textContent = `Завантаження AR... ${Math.round(progress)}%`;
+            }
+            
+            onSceneLoaded() {
+                setTimeout(() => {
+                    this.loadingScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        this.loadingScreen.style.display = 'none';
+                    }, 500);
+                }, 1000);
+            }
+            
+            onTargetFound() {
+                if (!this.isTracking) {
+                    this.isTracking = true;
+                    this.statusIndicator.className = 'status-indicator status-tracking';
+                    this.statusIndicator.innerHTML = '✅ Маркер знайдено!';
+                    
+                    // Відтворення звуку появи
+                    this.playSound('appear-sound');
+                }
+            }
+            
+            onTargetLost() {
+                this.isTracking = false;
+                this.statusIndicator.className = 'status-indicator status-scanning';
+                this.statusIndicator.innerHTML = '🔍 Сканування...';
+            }
+            
+            showProphecy() {
+                if (!this.isTracking) return;
+                
+                const sound = document.getElementById('magic-sound');
+                sound.currentTime = 0;
+                sound.play().catch(e => console.log('Звук не відтворився:', e));
+                
+                const text = this.prophecies[Math.floor(Math.random() * this.prophecies.length)];
+                this.prophecyText.textContent = text;
+                this.prophecyOverlay.classList.add('visible');
+                
+                // Аналітика (приклад)
+                this.trackEvent('prophecy_shown', { prophecy: text });
+                
+                setTimeout(() => {
+                    this.prophecyOverlay.classList.remove('visible');
+                }, 4000);
+            }
+            
+            playSound(soundId) {
+                const sound = document.getElementById(soundId);
+                if (sound) {
+                    sound.currentTime = 0;
+                    sound.play().catch(e => console.log('Sound error:', e));
+                }
+            }
+            
+            showError(message) {
+                this.errorMessage.textContent = message;
+                this.errorOverlay.classList.add('visible');
+                this.loadingScreen.style.display = 'none';
+                
+                this.trackEvent('ar_error', { error: message });
+            }
+            
+            setupPerformanceMonitoring() {
+                // Моніторинг FPS
+                let frameCount = 0;
+                let lastTime = performance.now();
+                
+                const checkFPS = () => {
+                    frameCount++;
+                    const currentTime = performance.now();
+                    if (currentTime >= lastTime + 1000) {
+                        const fps = Math.round((frameCount * 1000) / (currentTime - lastTime));
+                        if (fps < 30) {
+                            console.warn('Low FPS:', fps);
+                            this.reduceEffects();
+                        }
+                        frameCount = 0;
+                        lastTime = currentTime;
+                    }
+                    requestAnimationFrame(checkFPS);
+                };
+                checkFPS();
+            }
+            
+            reduceEffects() {
+                // Зменшення ефектів при низькому FPS
+                const particles = document.querySelector('[particle-system]');
+                if (particles) {
+                    particles.setAttribute('particle-system', 'particleCount', 100);
+                }
+            }
+            
+            trackEvent(eventName, params = {}) {
+                // Приклад відправки аналітики
+                if (typeof gtag !== 'undefined') {
+                    gtag('event', eventName, params);
+                }
+                console.log('Event:', eventName, params);
+            }
         }
-      }
-    });
-  </script>
+        
+        // Ініціалізація додатку
+        document.addEventListener('DOMContentLoaded', () => {
+            window.magicBallAR = new MagicBallAR();
+        });
+        
+        // Service Worker для офлайн роботи (опційно)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('SW registered'))
+                .catch(err => console.log('SW registration failed'));
+        }
+    </script>
 </body>
 </html>
-
